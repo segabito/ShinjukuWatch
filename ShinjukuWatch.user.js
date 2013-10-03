@@ -4,7 +4,7 @@
 // @description 原宿の後継バージョン的な
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.0.0
+// @version     1.0.1
 // @grant       none
 // ==/UserScript==
 
@@ -526,7 +526,7 @@
           var innerHeight = $(window).height();
           if (innerHeight > h  + 200) {
           // 縦幅に余裕がある時はプレーヤーが画面中央に来るように
-            var top = Math.max(($vt.offset().top + h / 2) - innerHeight / 2 + 100, 0);
+            var top = Math.max(($vt.offset().top + h / 2) - innerHeight / 2, 0);
 
             $('body, html').animate({scrollTop: top}, 600);
           } else {
@@ -546,13 +546,10 @@
   });
 
   var script = document.createElement("script");
-  script.id = "SinjukuLoader";
+  script.id = "ShinjukuLoader";
   script.setAttribute("type", "text/javascript");
   script.setAttribute("charset", "UTF-8");
   script.appendChild(document.createTextNode("(" + monkey + ")()"));
   document.body.appendChild(script);
 
 })();
-
-
-
