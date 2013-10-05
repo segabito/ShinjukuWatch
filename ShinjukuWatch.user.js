@@ -11,6 +11,10 @@
 // TODO: GINZAの動作チェック
 // ウォール機能どうする？
 
+// ver1.1.1
+// - レイアウトの崩れを修正
+// - WatchItLaterから、背景ダブルクリックで動画の位置にスクロールを移植
+
 // ver1.1.0
 // - 動画が切り替わる時にオススメ動画一覧を更新
 // - テレビちゃんメニューのスライドをなくした
@@ -33,11 +37,13 @@
         if (window.name === 'nicomylistadd') return;
 
         var $ = window.jQuery;
-        $('body,table,img,td').css({border:0, margin:0, padding:0, background: "transparent", overflow: 'hidden'});
-        $('#main_frm').css({background: '#fff', paddig: 0, borderRadius: 0}).addClass('mylistPopupPanel');
+        $('body,table,img,td').css({border:0, margin:0, padding:0, background: 'transparent', overflow: 'hidden'});
+        $('#main_frm').css({background: 'transparent', paddig: 0, borderRadius: 0}).addClass('mylistPopupPanel');
+        $('h1:first').hide();
+        $('table').css({marginTop: '100px'});
 
         if ($('#edit_description').length < 1) {
-          $('#main_frm .font12:first').css({position: 'absolute', margin: 0, top: 0, left: 0, padding: 0, color: 'red', fontSize: '8pt'});
+          $('#main_frm .font12:first').css({position: 'absolute', margin: 0, top: 0, left: 0, bottom: 0, padding: 0, color: 'red', fontSize: '8pt'});
           // ログインしてないぽい
           return;
         }
@@ -50,7 +56,16 @@
         $('table:first table:first').hide();
 
         $('select')
-          .css({width: '100px', height: '20px', position: 'absolute', top: 0, left: 0, margin: 0})
+          .css({
+            position: 'absolute',
+            top: 0,
+//            right: '50px',
+            bottom: 0,
+            left: 0,
+            fontSize: '11pt',
+            border: 0, margin: 0, 'border-radius': '4px 0 0 4px',
+            width: '100px'
+          })
           .addClass('mylistSelect');
         $('select')[0].selectedIndex = $('select')[0].options.length - 1;
         $('#select_group option:last')[0].innerHTML = 'とりあえずマイリスト';
@@ -59,7 +74,18 @@
         submit.className = 'mylistAdd';
         submit.type  = "submit";
         submit.value = "登録";
-        $(submit).css({position: 'absolute', top: '-1px', left: '100px', height: '22px'});
+        $(submit)
+          .css({
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+//            left: '100px',
+            width: '50px',
+            fontSize: '10pt',
+            margin: 0, 'border-radius': '0 4px 4px 0', 'border-width': '1px',
+            cursor: 'pointer'
+          });
         $('select')[0].parentNode.appendChild(submit);
 
         $('#edit_description').hide();
@@ -118,6 +144,7 @@
         this.initializeIchiba();
         this.initializeOsusume();
         this.initializePlaylist();
+        this.initializeAutoScroll();
         this.initializeQuickMylistFrame();
         this.initializeOther();
 
@@ -156,12 +183,13 @@
             border: 1px solid #cccccc;
             border-radius: 4px 4px 4px 4px;
             padding: 4px;
-            width: 674px;
+            width: 662px; {* プレーヤーの幅合わせ *}
             {* max-height: 200px; *}
             overflow-y: auto;
+            font-size: 12px;
           }
           body.size_normal #topVideoInfo .videoDescription {
-            width: 900px;
+            width: 888px;
           }
           #videoTagContainer .tagInner #videoHeaderTagList li .tagControlContainer,
           #videoTagContainer .tagInner #videoHeaderTagList li .tagControlEditContainer {
@@ -188,9 +216,13 @@
             height: auto !important;
             bottom: 0px;
             position: absolute;
+            min-height: 32px;
           }
           #videoTagContainer .tagInner #videoHeaderTagList .toggleTagEdit {
-            height: auto;
+            height: auto; width: 72px;
+          }
+          body:not(.full_with_browser) #content #videoTagContainer .tagInner #videoHeaderTagList {
+            padding-left: 85px;
           }
           .videoMenuToggle {
             transform-origin: 100% 100%; -webkit-transform-origin: 100% 100%;
@@ -205,32 +237,78 @@
           .toggleDetailExpand, .shortVideoInfo {
             display: none !important;
           }
+          #videoDetailInformation .videoMainInfoContainer {
+            border-top: none; padding-top: 0; {* 説明文のほうに枠線つけたのでいらなそう *}
+          }
+          #topVideoInfo .ch_prof, #topVideoInfo .userProfile {
+            width: 314px; {* コメントパネルの直線上と合わせる *}
+            min-height: 77px;
+            border-radius: 4px;
+          }
+          #topVideoInfo .ch_prof .symbol img, #topVideoInfo .userProfile .usericon{
+            width: 64px; height: 64px; margin-top: 5px;
+          }
+          .userProfile .userIconContainer {
+            width: 72px;
+          }
+          .userProfile .profile {
+            width: 242px; margin-top: 5px;
+          }
+          #topVideoInfo .parentVideoInfo {
+            width: 314px;
+            border-radius: 4px;
+          }
+          .channel .ch_prof .info {
+            padding-left: 70px;
+          }
+          {* ソーシャル関連リンクをコメントパネル幅に合わせる *}
+          ul.socialLinks li.socialLinkTwitter  { width: 108px; }
+          ul.socialLinks li.socialLinkGoogle   { width:  63px; }
+          ul.socialLinks li.socialLinkFacebook { width: 106px; }
+
+
+          #content #topVideoInfo .videoMainInfoContainer{
+            padding: 0;
+          }
+          #content #videoDetailInformation{
+            border-top: 0;
+          }
+          #content .videoInformation{
+            margin: -4px 0 ;
+          }
+          #content #topVideoInfo .videoStats {
+            margin-bottom: 2px;
+          }
 
           #videoExplorerExpand, #playlist, #outline { display: none; }
-          #videoHeaderMenu .searchContainer { margin-top: 0px; }
+          #videoHeaderMenu .searchContainer { margin-top: -2px; padding: 0 5px; right: -3px; }
 
           #outline .sidebar {
             float: none !important;
             width: auto !important;
             position: relative !important;
             clear: both !important;
+            height: 256px;
           }
           #outline .sidebar>div:not(#playerBottomAd):not(#videoReviewBottomAd) {
             display: none;
           }
-          #outline #playerBottomAd {
-            float: left: !important;
-            width: 300px !important; height: 256px !important;
-            overflow: hidden;
-          }
-          #outline #videoReviewBottomAd {
-            float: right !important;
+          #outline #playerBottomAd, #outline #videoReviewBottomAd {
             margin-top: 0 !important;
             position: absolute !important;
-            top:  auto !important;
-            left: auto !important;
-            bottom: 0  !important;
-            right:  0  !important;
+
+            overflow: hidden;
+            width: 300px !important; height: 256px !important;
+            top:    auto !important;
+            bottom:    0 !important;
+          }
+          #outline #playerBottomAd {
+            left:  0    !important;
+            right: auto !important;
+          }
+          #outline #videoReviewBottomAd {
+            left:  auto !important;
+            right:    0 !important;
           }
 
 
@@ -327,9 +405,13 @@
             border: 1px solid #000;
             background: white;
             box-shadow: 0px 0px 4px #000;
+            top: 98px;
+            bottom: auto;
+            opacity: 1;
+          }
+          body #videoHeader.infoActive.menuOpened #videoMenuWrapper{
             top: auto;
             bottom: 48px;
-            opacity: 1;
           }
           body #videoHeader #videoMenuWrapper .defmylistButton, body #videoHeader #videoMenuWrapper .mylistButton {
             display: none !important;
@@ -403,17 +485,19 @@
           }
           .quickMylistFrame {
             position: absolute;
-            bottom: 14px;
-            right: 45px;
+            bottom: 13px;
+            right: 44px;
             width: 150px;
-            height: 24px;
+            height: 21px;
             border: 0;
+            background: #444;
+            border-radius: 4px;
+            padding: 9px 4px;
           }
 
           #videoInfo, #nicommendContainer, #videoReview {
             display: none !important;
           }
-
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -517,6 +601,9 @@
           $container: $('<div class="osusumeContainer" />'),
           initialize: function() {
             $('#nicommentPanelContainer').empty().append(this.$container);
+            this.$container.on('dblclick', function() {
+              $(this).animate({scrollTop: 0}, 400);
+            });
           },
           add: function(item) {
             item.baseId = watchInfoModel.v; // どの動画の関連だったか
@@ -576,7 +663,7 @@
         // 再生開始時にタブがコメントに変わるのはザッピングに邪魔なので切る
         window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
           'onVideoStarted',
-          WatchApp.ns.init.PlayerInitializer.playerTab._onVideoStarted);
+          window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoStarted);
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
           watchInfoModel.addEventListener('reset', function() {
@@ -631,6 +718,40 @@
       },
       initializeIchiba: function() {
       },
+      initializeAutoScroll: function() {
+        // プレーヤーの位置に自動スクロール
+        var scrollToPlayer = function() {
+          var $pc = $('#playerContainer'), $vt = $('#videoTagContainer');
+          var h = $pc.outerHeight() + $vt.outerHeight();
+          var innerHeight = $(window).height();
+          if (innerHeight > h  + 200) {
+          // 縦幅に余裕がある時はプレーヤーが画面中央に来るように
+            var top = Math.max(($vt.offset().top + h / 2) - innerHeight / 2, 0);
+
+            $('body, html').animate({scrollTop: top}, 600);
+          } else {
+            // 縦解像度がタグ+プレイヤーより大きいならタグの開始位置、そうでないならプレイヤーの位置にスクロール
+            // ただし、該当部分が画面内に納まっている場合は、勝手にスクロールするとかえってうざいのでなにもしない
+            var topElement = innerHeight >= h ? '#videoTagContainer, #playerContainer' : '#playerContainer';
+            WatchApp.ns.util.WindowUtil.scrollFitMinimum(topElement, 600);
+          }
+         };
+
+        this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
+          if (!$('#videoHeader').hasClass('infoActive')) {
+            // ヘッダを閉じてる時はなにもしない
+            return;
+          }
+          scrollToPlayer();
+        });
+
+        $('html').on('dblclick', function(e) {
+          var $target = $(e.target);
+          console.log($target);
+          if ($target.hasClass('videoDescription')) return;
+          scrollToPlayer();
+        });
+      },
       initializeQuickMylistFrame: function() {
         // ニコニコ動画(RC2) までプレイヤーの右上にあったマイリストメニューを復活させる
         // 昔はマイリスト登録が1クリックだったのにどうしてこうなった？
@@ -658,6 +779,10 @@
         $('#content').addClass('noNews');
         $('.videoDetailExpand h2').addClass('videoDetailToggleButton');
 
+        // ヘッダとコンテンツツリーの位置を入れ替える お気に入り登録ボタンが効かなくなる模様
+        //$('.userProfile:first').after($('.parentVideoInfo:first').detach());
+        //$('.hiddenUserProfile').after($('.userProfile:first').detach());
+
         var refreshTitle = function() {
           window.setTimeout(function() {
             document.title = document.title.replace(/ニコニコ動画:Q$/, 'ニコニコ動画(新宿)');
@@ -677,27 +802,6 @@
         });
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           $('body').addClass('Shinjuku');
-
-          // プレーヤーの位置に自動スクロール
-
-          if (!$('#videoHeader').hasClass('infoActive')) {
-            // ヘッダを閉じてる時はなにもしない
-            return;
-          }
-          var $pc = $('#playerContainer'), $vt = $('#videoTagContainer');
-          var h = $pc.outerHeight() + $vt.outerHeight();
-          var innerHeight = $(window).height();
-          if (innerHeight > h  + 200) {
-          // 縦幅に余裕がある時はプレーヤーが画面中央に来るように
-            var top = Math.max(($vt.offset().top + h / 2) - innerHeight / 2, 0);
-
-            $('body, html').animate({scrollTop: top}, 600);
-          } else {
-            // 縦解像度がタグ+プレイヤーより大きいならタグの開始位置、そうでないならプレイヤーの位置にスクロール
-            // ただし、該当部分が画面内に納まっている場合は、勝手にスクロールするとかえってうざいのでなにもしない
-            var topElement = innerHeight >= h ? '#videoTagContainer, #playerContainer' : '#playerContainer';
-            WatchApp.ns.util.WindowUtil.scrollFitMinimum(topElement, 600);
-          }
         });
       }
 
