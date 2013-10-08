@@ -1,15 +1,18 @@
 // ==UserScript==
 // @name        ShinjukuWatch
 // @namespace   https://github.com/segabito/
-// @description 原宿の後継バージョン的な
+// @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.1.0
+// @version     1.2.1
 // @grant       none
 // ==/UserScript==
 
-// TODO: GINZAの動作チェック
-// ウォール機能どうする？
+// ver1.2.1
+// - マイリストの連続再生から飛んできたときは、プレイリストを消さない
+
+// ver1.2.0
+// - GINZA対応
 
 // ver1.1.1
 // - レイアウトの崩れを修正
@@ -165,6 +168,9 @@
       },
       initializeCss: function() {
         var __css__ = (function() {/*
+          {* ページの初期化中に横スクロールバーが出るのがうざい *}
+          body:not(.Shinjuku) { overflow-x: hidden; }
+
           {* ニコるを消す *}
           .nicoru-button{
             left: -9999; display: none !important;
@@ -206,7 +212,7 @@
           }
 
           {* 余白の除去 *}
-          body #playerContainerWrapper { margin-top: -20px; }
+          body:not(.videoExplorer) #playerContainerWrapper { margin-top: -20px; }
           #videoHeader #videoHeaderDetail {
             margin-top: 0 !important;
           }
@@ -258,8 +264,8 @@
             width: 314px;
             border-radius: 4px;
           }
-          .channel .ch_prof .info {
-            padding-left: 70px;
+          body.channel .ch_prof .info {
+            padding-left: 74px;
           }
           {* ソーシャル関連リンクをコメントパネル幅に合わせる *}
           ul.socialLinks li.socialLinkTwitter  { width: 108px; }
@@ -280,7 +286,16 @@
             margin-bottom: 2px;
           }
 
-          #videoExplorerExpand, #playlist, #outline { display: none; }
+          body:not(.videoExplorer) #videoExplorerExpand, #outline { display: none; }
+          body:not(.full_with_browser):not(.videoExplorer) #content:not(.s_showPlaylist) #playlist{
+            position: absolute; top: -9999px;
+          }
+          body:not(.full_with_browser):not(.videoExplorer) #playlist {
+            margin: -10px auto 0; width: 1008px;
+          }
+          body:not(.full_with_browser):not(.videoExplorer).size_normal #playlist {
+            width: 1234px;
+          }
           #videoHeaderMenu .searchContainer { margin-top: -2px; padding: 0 5px; right: -3px; }
 
           #outline .sidebar {
@@ -294,13 +309,13 @@
             display: none;
           }
           #outline #playerBottomAd, #outline #videoReviewBottomAd {
-            margin-top: 0 !important;
             position: absolute !important;
 
             overflow: hidden;
             width: 300px !important; height: 256px !important;
             top:    auto !important;
             bottom:    0 !important;
+            margin: 0 !important;
           }
           #outline #playerBottomAd {
             left:  0    !important;
@@ -339,10 +354,14 @@
           body.size_normal #ichibaMain dl {
             margin:0 10px 30px;
           }
+          body #ichibaMain dt {
+            height: 60px;
+          }
           #outline #ichibaMain .rowJustify { display: none; }
           #outline #ichibaMain #ichibaMainFooter {
             clear: both;
           }
+
           #footer { z-index: 1;}
 
           .osusumeContainer {
@@ -361,13 +380,18 @@
             border-bottom: 1px solid #ccc;
             text-align: left;
           }
+          .osusumeContainer li a:visited {
+            color: purple;
+          }
+
           .osusumeContainer .currentVideoRelated {
             background: #fff;
             font-weight: bolder;
           }
 
-          .osusumeContainer .otherVideoRelated.first {
+          .osusumeContainer .previousOsusume {
             margin-top: 64px;
+            background: #ccc;
           }
 
           .osusumeContainer .thumbnail img {
@@ -377,6 +401,10 @@
           .osusumeContainer li p  {
             clear: both; font-size: 80%;
             text-align: center;
+          }
+          .osusumeContainer li .posted {
+            display: block;
+            font-size: 80%;
           }
           .osusumeContainer li .title {
             font-size: 80%;
@@ -499,6 +527,75 @@
             display: none !important;
           }
 
+          #playerAlignmentArea .playerBottomButton {
+            display: none;
+          }
+          body:not(.videoExplorer):not(.full_with_browser).Shinjuku #playerAlignmentArea .playerBottomButton {
+            display: block;
+          }
+
+          #playerAlignmentArea .playerBottomButton {
+            position: absolute;
+            bottom: -20px;
+            height: 28px;
+            border: 1px outset #888;
+            border-radius: 0 0 8px 8px;
+            cursor: pointer;
+            color: #333;
+            transition: box-shadow 0.4s ease-out;
+            background: #fff;
+          }
+          #playerAlignmentArea .playerBottomButton:hover {
+            box-shadow: 1px 1px 1px #888;
+            bottom: -25px;
+          }
+          #content.s_showPlaylist #playerAlignmentArea .playerBottomButton {
+            bottom: -185px;
+          }
+          #content.s_showPlaylist #playerAlignmentArea .playerBottomButton:hover {
+            bottom: -190px;
+          }
+
+          #playerAlignmentArea .playerBottomButton:after {
+            content: ' ▼';
+          }
+          #content.s_showPlaylist #playerAlignmentArea .togglePlaylist:after {
+            content: ' ▲';
+          }
+
+          #playerAlignmentArea .openVideoExplorer {
+            left: 120px;
+            width: 64px;
+          }
+          #playerAlignmentArea .togglePlaylist {
+            left: 0px;
+            width: 120px;
+          }
+
+
+          #wallImageContainer, #content.w_flat_white #wallImageContainer,
+          #chipWallList,       #content.w_flat_white #chipWallList  {
+          }
+          {* なんで左に移動するのか？ それは、このアイコンのせいで横スクロールバーが出るのが嫌だから *}
+          #content #chipWallList {
+            right: auto; left: -42px;
+          }
+          {* harajuku_whiteって言ってるけどどう見てもq_white です。 *}
+          .Shinjuku .wallAlignmentArea img[src$="harajuku_white.png"] {
+            display: none !important;
+          }
+          .wallAlignmentArea.image2 {
+            display: none !important;
+          }
+          body:not(.videoExplorer):not(.full_with_browser) #content #playerContainer {
+            min-height: 461px;
+          }
+          body #wallImageContainer {
+            bottom: 10px;
+            top: 10px;
+            height: auto;
+          }
+
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__css__);
@@ -522,7 +619,7 @@
         var explorer   = window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorer;
         var controller = window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerController;
         var isSearchMode = function() {
-          explorer.isOpen();
+          return explorer.isOpen();
         };
 
         controller.showDeflist_org         = controller.showDeflist;
@@ -565,6 +662,14 @@
           }
           this.searchVideo_org(word, type);
         }, controller);
+
+        var $openVideoExplorer = $('<button class="openVideoExplorer playerBottomButton">検索</botton>');
+        $openVideoExplorer.on('click', function(e) {
+          e.stopPropagation(); e.preventDefault();
+          explorer.openByCurrentCondition();
+        });
+        $('#playerAlignmentArea').append($openVideoExplorer);
+        $openVideoExplorer = null;
       },
       initializeNicommend: function() {
         $('#nicommentPanelContainer').empty();
@@ -586,6 +691,7 @@
         var template = [
           '<li class="%class%">',
             '<a href="/watch/%videoId%" class="thumbnail"><img src="%thumbnail%"></a>',
+            '%posted%',
             '<a href="/watch/%videoId%" class="title">%title%</a>',
             '<p>再: <span class="count">%view%</span>',
             'コメ: <span class="count">%num_res%</span>',
@@ -614,6 +720,7 @@
             if (!item._hasData) return;
             this.add({
               id:             item.id,
+              first_retrieve: item.firstRetrieve,
               thumbnail_url:  item.thumbnailUrl,
               num_res:        item.numRes,
               mylist_counter: item.mylistCounter,
@@ -639,12 +746,22 @@
                 .split('%num_res%')  .join(item.num_res)
                 .split('%mylist%')   .join(item.mylist_counter)
                 .split('%title%')    .join(item.title)
+                .split('%posted%')   .join(
+                    typeof item.first_retrieve === 'string' ?
+                      '<span class="posted">' + item.first_retrieve.replace(/(\d+)-/g, '$1/') + ' 投稿</span>' :
+                      ''
+                )
                 .split('%class%')    .join(item.baseId === watchId ? 'currentVideoRelated' : 'otherVideoRelated');
               view.push(itemView);
             }
             view.push('</ul>');
 
-            this.$container.html(view.join('')).scrollTop(0).find('.otherVideoRelated:first').addClass('first');
+            this.$container
+              .html(view.join(''))
+              .scrollTop(0)
+              .find('.otherVideoRelated:first')
+              .addClass('first')
+              .before($('<li class="previousOsusume">前の動画のオススメ</li>'));
           }
         };
 
@@ -664,6 +781,10 @@
         window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
           'onVideoStarted',
           window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoStarted);
+        window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
+          'onVideoEnded',
+          window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoEnded);
+
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
           watchInfoModel.addEventListener('reset', function() {
@@ -674,6 +795,16 @@
       initializePlaylist: function() {
         this.playlistController = {
           _playlist: window.WatchApp.ns.init.PlaylistInitializer.playlist,
+          isContinuous: function() { // 連続再生中か？
+            return this._playlist.isContinuous();
+          },
+          toggle: function(v) {
+            if (typeof v === 'boolean') {
+              $('#content').toggleClass('s_showPlaylist', v);
+            } else {
+              $('#content').toggleClass('s_showPlaylist');
+            }
+          },
           getItems: function() {
             return this._playlist.currentItems.concat();
           },
@@ -702,8 +833,13 @@
 
         var items = this.playlistController.getItems();
 
-        // プレイリストを空にする事で、プレーヤー上の「次の動画」「前の動画」ボタンを無効化して誤爆を防ぐことができる
-        this.playlistController.clear();
+        if (location.href.indexOf('mylist_mode=playlist') >= 0) {
+          // マイリストページなどから「連続再生」で飛んできた場合はプレイリストを消さない
+          this.playlistController.toggle(true);
+        } else {
+          // プレイリストを空にする事で、プレーヤー上の「次の動画」「前の動画」ボタンを無効化して誤爆を防ぐことができる
+          this.playlistController.clear();
+        }
 
         // 通信回数を減らすため、
         // 動画ページを開いた初回だけはrelatedVideoAPIではなく、プレイリストにあった動画をオススメにつっこむ。
@@ -714,6 +850,14 @@
           }
           this.osusumeController.refresh();
         }
+
+        var $togglePlaylist = $('<button class="togglePlaylist playerBottomButton">プレイリスト</botton>');
+        $togglePlaylist.on('click', $.proxy(function(e) {
+          e.stopPropagation(); e.preventDefault();
+          this.playlistController.toggle();
+        }, this));
+        $('#playerAlignmentArea').append($togglePlaylist);
+        $togglePlaylist = null;
 
       },
       initializeIchiba: function() {
@@ -735,7 +879,7 @@
             var topElement = innerHeight >= h ? '#videoTagContainer, #playerContainer' : '#playerContainer';
             WatchApp.ns.util.WindowUtil.scrollFitMinimum(topElement, 600);
           }
-         };
+        };
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           if (!$('#videoHeader').hasClass('infoActive')) {
@@ -747,7 +891,6 @@
 
         $('html').on('dblclick', function(e) {
           var $target = $(e.target);
-          console.log($target);
           if ($target.hasClass('videoDescription')) return;
           scrollToPlayer();
         });
@@ -760,7 +903,7 @@
 
         var update = function() {
           var videoId = watchInfoModel.v;
-          $iframe[0].contentWindow.location.replace("http://www.nicovideo.jp/mylist_add/video/" + videoId);
+          $iframe[0].contentWindow.location.replace("/mylist_add/video/" + videoId);
         };
 
         $('#videoHeader').append($iframe);
