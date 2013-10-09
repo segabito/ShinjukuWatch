@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.2.1
+// @version     1.2.2
 // @grant       none
 // ==/UserScript==
+
+// ver1.2.2
+// - コメントパネルの上に再生数表示
 
 // ver1.2.1
 // - マイリストの連続再生から飛んできたときは、プレイリストを消さない
@@ -149,6 +152,7 @@
         this.initializePlaylist();
         this.initializeAutoScroll();
         this.initializeQuickMylistFrame();
+        this.initializeVideoCounter();
         this.initializeOther();
 
         this.initializeCss();
@@ -202,10 +206,10 @@
             padding: 1px 0;
           }
           body:not(.full_with_browser).size_medium #videoTagContainer {
-            width: 816px;
+            width: 672px; min-width: 672px; padding-right: 0;
           }
           body:not(.full_with_browser).size_normal #videoTagContainer {
-            width: 1036px;
+            width: 898px; min-width: 898px; padding-right: 0;
           }
           body #videoTagContainer .tagInner #videoTagContainerPin.active {
             display: none !important;
@@ -411,6 +415,7 @@
           }
           .osusumeContainer li .count  {
             font-weight: bolder;
+            margin-right: 8px;
           }
           .osusumeContainer li:after {
             content: ''; clear: both;
@@ -508,7 +513,7 @@
             height: auto;
           }
 
-          .quickMylistFrame.initialize {
+          body:not(.Shinjuku) .quickMylistFrame {
             top: -999px;
           }
           .quickMylistFrame {
@@ -518,7 +523,7 @@
             width: 150px;
             height: 21px;
             border: 0;
-            background: #444;
+            background: #555;
             border-radius: 4px;
             padding: 9px 4px;
           }
@@ -580,7 +585,7 @@
           #content #chipWallList {
             right: auto; left: -42px;
           }
-          {* harajuku_whiteって言ってるけどどう見てもq_white です。 *}
+          {* Harajuku Whiteって言ってるけどどう見てもGinza Gray です。 *}
           .Shinjuku .wallAlignmentArea img[src$="harajuku_white.png"] {
             display: none !important;
           }
@@ -595,6 +600,26 @@
             top: 10px;
             height: auto;
           }
+
+          #videoHeader .videoCounter {
+            display: none;
+            position: absolute;
+            right: 208px; bottom: 10px;
+            width: 116px;
+            font-size: 10px;
+          }
+          body:not(.videoExplorer):not(.full_with_browser).Shinjuku #videoHeader .videoCounter {
+            display: block;
+          }
+          #videoHeader .videoCounter li span {
+            font-weight: bolder; float: right;
+            transition: color 1s ease;
+          }
+          #videoHeader .videoCounter li span.update {
+            color: #888;
+            transition: none;
+          }
+
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -911,11 +936,72 @@
         update();
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
-          $iframe.removeClass('initialize');
           watchInfoModel.addEventListener('reset', function() {
             update();
           });
         }, this));
+      },
+      initializeVideoCounter: function() {
+        var watchInfoModel      = this._watchInfoModel;
+        var playerAreaConnector = this._playerAreaConnector;
+        var addComma            = window.WatchApp.ns.util.StringUtil.addComma;
+        var counter             = {viewCount: 0, commentCount: 0, mylistCount: 0};
+        var $videoCounter = $([
+            '<div class="videoCounter">',
+              '<ul>',
+                '<li class="view">再生:         <span class="viewCount"   ></span></li>',
+                '<li class="comment">コメント:  <span class="commentCount"></span></li>',
+                '<li class="mylist">マイリスト: <span class="mylistCount" ></span></li>',
+              '</ul>',
+            '</div>'
+          ].join(''));
+
+        var update = function(counter) {
+          $videoCounter
+            .find('.viewCount'   ).text(addComma(counter.viewCount   )).end()
+            .find('.commentCount').text(addComma(counter.commentCount)).end()
+            .find('.mylistCount' ).text(addComma(counter.mylistCount ));
+        };
+        var blink = function(target) {
+          var $target = $videoCounter.find(target).addClass('update');
+          window.setTimeout(function() {
+            $target.removeClass('update');
+          }, 100);
+        };
+
+        update(watchInfoModel);
+
+        $('.quickMylistFrame').before($videoCounter);
+
+        watchInfoModel.addEventListener('reset', function() {
+          counter.viewCount    = watchInfoModel.viewCount;
+          counter.commentCount = watchInfoModel.commentCount;
+          counter.mylistCount  = watchInfoModel.mylistCount;
+          update(counter);
+          blink('');
+        });
+        playerAreaConnector.addEventListener('onWatchCountUpdated', function(c) {
+          var diff = c - counter.viewCount;
+          if (diff === 0) return;
+          counter.viewCount    = c;
+          update(counter);
+          blink('.viewCount');
+        });
+        playerAreaConnector.addEventListener('onCommentCountUpdated', function(c) {
+          var diff = c - counter.commentCount;
+          if (diff === 0) return;
+          counter.commentCount = c;
+          update(counter);
+          blink('.commentCount');
+        });
+        playerAreaConnector.addEventListener('onMylistCountUpdated', function(c) {
+          var diff = c - counter.mylistCount;
+          if (diff === 0) return;
+          counter.mylistCount  = c;
+          update(counter);
+          blink('.mylistCount');
+        });
+
       },
       initializeOther: function() {
         // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
