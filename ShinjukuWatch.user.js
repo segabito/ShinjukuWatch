@@ -4,9 +4,19 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.2.2
+// @version     1.2.4
 // @grant       none
 // ==/UserScript==
+
+// ver1.2.4
+// - フルスクリーン解除したときプレーヤーが真ん中に来るようにする (GINZAだとページの一番上に飛ばされる)
+// - (あまり使う人いないと思うけど)プレイリスト・タグつき全画面表示にした時の細かな不具合を修正
+// - プレイリスト・タグつき全画面表示にニュースを消す・プレイリストを自動最小化
+// - ?ref=xxx というパラメータ付きのURLでアクセスしたとき、自動で?ref=xxxを除去 (これがあるとブラウザの既読リンクがわからなくなるため)
+// - ニコニコニュースの通信を切ってみる
+
+// ver1.2.3
+// - タイプミスでタグ受信無効化が出来てなかった
 
 // ver1.2.2
 // - コメントパネルの上に再生数表示
@@ -113,7 +123,7 @@
       return;
     }
 
-    window.Shinjuku.ns.loader.RelatedVideo = function() { this.initialize.apply(this, arguments); }
+    window.Shinjuku.ns.loader.RelatedVideo = function() { this.initialize.apply(this, arguments); };
     window.Shinjuku.ns.loader.RelatedVideo.prototype = {
       initialize: function() {
       },
@@ -135,7 +145,7 @@
 
     window.WatchApp.mixin(window.Shinjuku, {
       initialize: function() {
-        if (window.WatchApp) {
+        if (window.WatchApp && window.WatchJsApi) { // WatchAppだけだとコメント編集画面にも来てしまうため
           this.initializeShinjuku();
         }
       },
@@ -153,6 +163,7 @@
         this.initializeAutoScroll();
         this.initializeQuickMylistFrame();
         this.initializeVideoCounter();
+        this.initializeScreenMode();
         this.initializeOther();
 
         this.initializeCss();
@@ -216,20 +227,20 @@
           }
 
           {* 余白の除去 *}
-          body:not(.videoExplorer) #playerContainerWrapper { margin-top: -20px; }
+          body:not(.full_with_browser):not(.videoExplorer) #playerContainerWrapper { margin-top: -20px; }
           #videoHeader #videoHeaderDetail {
             margin-top: 0 !important;
           }
           #videoHeader .videoDetailExpand { height: auto !important; min-height: 32px;}
           #videoTagContainer { height: auto !important; }
-          #videoTagContainer .tagInner {
+          body:not(.full_with_browser) #videoTagContainer .tagInner {
             height: auto !important;
             bottom: 0px;
             position: absolute;
-            min-height: 32px;
+            min-height: 44px;
           }
           #videoTagContainer .tagInner #videoHeaderTagList .toggleTagEdit {
-            height: auto; width: 72px;
+          height: auto; width: 72px; padding: 2px 4px;
           }
           body:not(.full_with_browser) #content #videoTagContainer .tagInner #videoHeaderTagList {
             padding-left: 85px;
@@ -282,6 +293,7 @@
           }
           #content #videoDetailInformation{
             border-top: 0;
+            margin-bottom: -12px;
           }
           #content .videoInformation{
             margin: -4px 0 ;
@@ -425,6 +437,10 @@
           #content.noNews #textMarquee {
             display: none !important;
           }
+          {* ブラウザ画面でプレイリスト・タグ出すモードでニュースはいらない *}
+          body.full_with_browser:not(.full_and_mini) .noNews #playerAlignmentArea{
+            margin-bottom: -37px;
+          }
 
           {* テレビちゃんメニュー スライドをやめる *}
           body #videoHeader #videoMenuWrapper{
@@ -528,6 +544,12 @@
             padding: 9px 4px;
           }
 
+          {* プレイリスト・タグ入り全画面の時に消すの忘れてた。 けどやっぱり便利そうなので残す事にした。 *}
+          body.full_with_browser:not(.full_and_mini) .quickMylistFrame{
+            top: 0; right: 0; padding: 4px 4px;
+          }
+
+
           #videoInfo, #nicommendContainer, #videoReview {
             display: none !important;
           }
@@ -627,13 +649,13 @@
       },
       initializeTag: function() {
         // タグ自動更新キャンセラー
-        window.WatchApp.ns.model.player.NicoPlayerConnector.onTagDataRecieved = function() {};
+        window.WatchApp.ns.model.player.NicoPlayerConnector.onTagDataReceived = function() {};
 
         // タグ領域のピン留め
         window.WatchApp.ns.init.TagInitializer.tagViewController.tagViewPinStatus.changeStatus(true);
 
-        var $a = $('.toggleTagEditInner a').detach();
-        $('.toggleTagEditInner').empty().append($a);
+       //  var $a = $('.toggleTagEditInner a').detach();
+       //  $('.toggleTagEditInner').empty().append($a);
       },
       initializeNicoru: function() {
         // ニコる数を取得するためにコメントパネルがめちゃくちゃ重くなってるのを改善 (Chromeだとあまり変わらない)
@@ -897,14 +919,15 @@
           // 縦幅に余裕がある時はプレーヤーが画面中央に来るように
             var top = Math.max(($vt.offset().top + h / 2) - innerHeight / 2, 0);
 
-            $('body, html').animate({scrollTop: top}, 600);
+            $('body, html').animate({scrollTop: top}, 400);
           } else {
             // 縦解像度がタグ+プレイヤーより大きいならタグの開始位置、そうでないならプレイヤーの位置にスクロール
             // ただし、該当部分が画面内に納まっている場合は、勝手にスクロールするとかえってうざいのでなにもしない
             var topElement = innerHeight >= h ? '#videoTagContainer, #playerContainer' : '#playerContainer';
-            WatchApp.ns.util.WindowUtil.scrollFitMinimum(topElement, 600);
+            WatchApp.ns.util.WindowUtil.scrollFitMinimum(topElement, 400);
           }
         };
+        this.scrollToPlayer = scrollToPlayer;
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           if (!$('#videoHeader').hasClass('infoActive')) {
@@ -978,7 +1001,6 @@
           counter.commentCount = watchInfoModel.commentCount;
           counter.mylistCount  = watchInfoModel.mylistCount;
           update(counter);
-          blink('');
         });
         playerAreaConnector.addEventListener('onWatchCountUpdated', function(c) {
           var diff = c - counter.viewCount;
@@ -1003,14 +1025,35 @@
         });
 
       },
+      initializeScreenMode: function() {
+        var lastScreenMode = '', self = this;
+
+        var onScreenModeChange = function(sc) {
+          var mode = sc.mode;
+          if (mode === 'browserFull' && lastScreenMode !== mode) {
+            // フル画面時プレイリストを閉じる
+            $('#content').find('.browserFullPlaylistClose:visible').click();
+          } else
+          if (lastScreenMode === 'browserFull' && mode !== 'browserFull') {
+
+            // ウォールのせい?でheightが当たったままになるバグから回復
+            $('#playerContainerSlideArea').css({height: ''});
+            // 解除のたびにスクロール位置が一番上になってしまうので、いい感じの場所にする
+            window.setTimeout(function() { self.scrollToPlayer(true); }, 100);
+
+          }
+          lastScreenMode = mode;
+        };
+        window.WatchApp.ns.init.PlayerInitializer.playerScreenMode.addEventListener('change', onScreenModeChange);
+      },
       initializeOther: function() {
         // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
-        $('#content').addClass('noNews');
         $('.videoDetailExpand h2').addClass('videoDetailToggleButton');
 
         // ヘッダとコンテンツツリーの位置を入れ替える お気に入り登録ボタンが効かなくなる模様
         //$('.userProfile:first').after($('.parentVideoInfo:first').detach());
         //$('.hiddenUserProfile').after($('.userProfile:first').detach());
+
 
         var refreshTitle = function() {
           window.setTimeout(function() {
@@ -1023,12 +1066,27 @@
           refreshTitle();
         });
 
-        this._playerAreaConnector.addEventListener('onVideoEnded', function() {
+        // ?ref=がついてるせいで未読既読のリンクの色が変わらなくなる問題の対策
+        // 自分のマイリストから飛んできた場合の ?group_id=xxxも消すべきか？は迷うところ
+        // これとは別にリンク側の?ref=も除去する必要があるが、単体のスクリプトが既に存在するので省略
+        if (location.href.indexOf('?ref=') >= 0) {
+          window.history.replaceState('', '', location.href.split('?')[0]);
+        }
+
+        $('#content').addClass('noNews'); // ニュース消す
+        // 通信を止める
+        var tmi = window.WatchApp.ns.init.TextMarqueeInitializer;
+        tmi.textMarqueeItemList.list.length = 0;
+        tmi.textMarqueeItemDispatcher.stop();
+        tmi.textMarqueeItemDispatcher.start = function() {};
+
+        this._playerAreaConnector.addEventListener('onVideoEnded', $.proxy(function() {
           // 原宿までと同じように、動画終了時にフルスクリーンを解除したい
-          if ($('body').hasClass('full_with_browser')) {
+          // ただし、連続再生中は解除しない
+          if ($('body').hasClass('full_with_browser') && !this.playlistController.isContinuous()) {
             window.WatchJsApi.player.changePlayerScreenMode('notFull');
           }
-        });
+        }, this));
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           $('body').addClass('Shinjuku');
         });
