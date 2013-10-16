@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.2.4
+// @version     1.2.5
 // @grant       none
 // ==/UserScript==
+
+// ver1.2.5
+// - 本家の微妙なCSS変更に対応と今後の布石
 
 // ver1.2.4
 // - フルスクリーン解除したときプレーヤーが真ん中に来るようにする (GINZAだとページの一番上に飛ばされる)
@@ -182,10 +185,70 @@
         return elm;
       },
       initializeCss: function() {
-        var __css__ = (function() {/*
+        var __common_css__ = (function() {/*
           {* ページの初期化中に横スクロールバーが出るのがうざい *}
           body:not(.Shinjuku) { overflow-x: hidden; }
 
+          .osusumeContainer {
+            position: absolute;
+                      top: 8px; right: 8px; bottom: 8px; left: 8px; padding: 4px;
+            border: 1px solid #000;
+            overflow-y: scroll;
+            overflow-x: hidden;
+          }
+          .panel_ads_shown .osusumeContainer {
+            bottom: 0px;
+          }
+          .osusumeContainer li  {
+            margin-bottom: 8px;
+            padding: 4px;
+            border-bottom: 1px solid #ccc;
+            text-align: left;
+          }
+          .osusumeContainer li a:visited {
+            color: purple;
+          }
+
+          .osusumeContainer .currentVideoRelated {
+            background: #fff;
+            font-weight: bolder;
+          }
+
+          .osusumeContainer .previousOsusume {
+            margin-top: 64px;
+            background: #ccc;
+          }
+
+          .osusumeContainer .thumbnail img {
+            float: left; width: 64px; height: 48px;
+            margin-right: 4px;
+          }
+          .osusumeContainer li p  {
+            clear: both; font-size: 80%;
+            text-align: center;
+          }
+          .osusumeContainer li .posted {
+            display: block;
+            font-size: 80%;
+          }
+          .osusumeContainer li .title {
+            font-size: 80%;
+          }
+          .osusumeContainer li .count  {
+            font-weight: bolder;
+            margin-right: 8px;
+          }
+          .osusumeContainer li:after {
+            content: ''; clear: both;
+          }
+
+          .quickMylistFrame {
+            position: absolute;
+            top: -999px;
+          }
+
+        */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
+        var __css__ = (function() {/*
           {* ニコるを消す *}
           .nicoru-button{
             left: -9999; display: none !important;
@@ -302,7 +365,7 @@
             margin-bottom: 2px;
           }
 
-          body:not(.videoExplorer) #videoExplorerExpand, #outline { display: none; }
+          body:not(.videoExplorer) #videoExplorerExpand { display: none; }
           body:not(.full_with_browser):not(.videoExplorer) #content:not(.s_showPlaylist) #playlist{
             position: absolute; top: -9999px;
           }
@@ -344,8 +407,9 @@
 
 
           {* 背景色 *}
-          body, #outline { background: #f4f4f4; transition: background 1s ease 1s; }
-          body.Shinjuku,.Shinjuku #outline { background: #fff; }
+          body { background: #f4f4f4; transition: background 1s ease 1s; }
+          #outline { background: none !important; }
+          body.Shinjuku,body.Shinjuku { background: #fff; } {* Ginza Grayから真のHarajuku Whiteへの回帰 *}
           body #playerContainerWrapper { background: none; }
 
           {* 下半身いっぱいを市場表示 *}
@@ -379,59 +443,6 @@
           }
 
           #footer { z-index: 1;}
-
-          .osusumeContainer {
-            position: absolute;
-                      top: 8px; right: 8px; bottom: 8px; left: 8px; padding: 4px;
-            border: 1px solid #000;
-            overflow-y: scroll;
-            overflow-x: hidden;
-          }
-          .panel_ads_shown .osusumeContainer {
-            bottom: 0px;
-          }
-          .osusumeContainer li  {
-            margin-bottom: 8px;
-            padding: 4px;
-            border-bottom: 1px solid #ccc;
-            text-align: left;
-          }
-          .osusumeContainer li a:visited {
-            color: purple;
-          }
-
-          .osusumeContainer .currentVideoRelated {
-            background: #fff;
-            font-weight: bolder;
-          }
-
-          .osusumeContainer .previousOsusume {
-            margin-top: 64px;
-            background: #ccc;
-          }
-
-          .osusumeContainer .thumbnail img {
-            float: left; width: 64px; height: 48px;
-            margin-right: 4px;
-          }
-          .osusumeContainer li p  {
-            clear: both; font-size: 80%;
-            text-align: center;
-          }
-          .osusumeContainer li .posted {
-            display: block;
-            font-size: 80%;
-          }
-          .osusumeContainer li .title {
-            font-size: 80%;
-          }
-          .osusumeContainer li .count  {
-            font-weight: bolder;
-            margin-right: 8px;
-          }
-          .osusumeContainer li:after {
-            content: ''; clear: both;
-          }
 
           {* ニュース消す *}
           #content.noNews #textMarquee {
@@ -529,12 +540,10 @@
             height: auto;
           }
 
-          body:not(.Shinjuku) .quickMylistFrame {
-            top: -999px;
-          }
-          .quickMylistFrame {
+          .Shinjuku .quickMylistFrame {
             position: absolute;
             bottom: 13px;
+            top: auto;
             right: 44px;
             width: 150px;
             height: 21px;
@@ -545,10 +554,9 @@
           }
 
           {* プレイリスト・タグ入り全画面の時に消すの忘れてた。 けどやっぱり便利そうなので残す事にした。 *}
-          body.full_with_browser:not(.full_and_mini) .quickMylistFrame{
+          body.full_with_browser.Shinjuku:not(.full_and_mini) .quickMylistFrame{
             top: 0; right: 0; padding: 4px 4px;
           }
-
 
           #videoInfo, #nicommendContainer, #videoReview {
             display: none !important;
@@ -608,7 +616,7 @@
             right: auto; left: -42px;
           }
           {* Harajuku Whiteって言ってるけどどう見てもGinza Gray です。 *}
-          .Shinjuku .wallAlignmentArea img[src$="harajuku_white.png"] {
+          .wallAlignmentArea img[src$="harajuku_white.png"], #wallImageContainer div[style*="harajuku_white.png"] {
             display: none !important;
           }
           .wallAlignmentArea.image2 {
@@ -645,6 +653,7 @@
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
+        this.addStyle(__common_css__);
         this.addStyle(__css__);
       },
       initializeTag: function() {
