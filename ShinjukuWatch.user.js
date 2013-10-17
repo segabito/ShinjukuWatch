@@ -4,9 +4,13 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.2.5
+// @version     1.3.0
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.0
+// - 設定パネルを追加
+// - ShinjukuWatchのCSSを適用しないようにする設定を追加。他のuserstyleと併用できます
 
 // ver1.2.5
 // - 本家の微妙なCSS変更に対応と今後の布石
@@ -156,6 +160,7 @@
         this._watchInfoModel      = window.WatchApp.ns.init.CommonModelInitializer.watchInfoModel;
         this._playerAreaConnector = window.WatchApp.ns.init.PlayerInitializer.playerAreaConnector;
 
+        this.initializeUserConfig();
         this.initializeTag();
         this.initializeNicoru();
         this.initializeVideoExplorer();
@@ -167,6 +172,7 @@
         this.initializeQuickMylistFrame();
         this.initializeVideoCounter();
         this.initializeScreenMode();
+        this.initializeSettingPanel();
         this.initializeOther();
 
         this.initializeCss();
@@ -246,20 +252,89 @@
             position: absolute;
             top: -999px;
           }
+          #videoHeader .videoCounter {
+            display: none;
+          }
 
-        */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
-        var __css__ = (function() {/*
+          #playerAlignmentArea .playerBottomButton {
+            display: none;
+          }
+
+          .shinjukuSettingMenu a {
+            font-weight: bolder;
+          }
+          #shinjukuSettingPanel {
+            position: fixed;
+            bottom: 2000px; right: 8px;
+            z-index: -1;
+            width: 500px;
+            background: #f0f0f0; border: 1px solid black;
+            padding: 8px;
+            transition: bottom 0.4s ease-out;
+          }
+          #shinjukuSettingPanel.open {
+            display: block;
+            bottom: 8px;
+            box-shadow: 0 0 8px black;
+            z-index: 10000;
+          }
+          #shinjukuSettingPanel .close {
+            position: absolute;
+            cursor: pointer;
+            right: 8px; top: 8px;
+          }
+          #shinjukuSettingPanel .panelInner {
+            background: #fff;
+            border: 1px inset;
+            padding: 8px;
+            min-height: 300px;
+            overflow-y: scroll;
+          }
+          #shinjukuSettingPanel .panelInner .item {
+            border-bottom: 1px dotted #888;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+          }
+          #shinjukuSettingPanel .panelInner .item:hover {
+            background: #eef;
+          }
+          #shinjukuSettingPanel .windowTitle {
+            font-size: 150%;
+          }
+          #shinjukuSettingPanel .itemTitle {
+          }
+          #shinjukuSettingPanel label {
+
+          }
+          #shinjukuSettingPanel small {
+            color: #666;
+          }
+
+          {* ニュース消す *}
+          #content.noNews #textMarquee {
+            display: none !important;
+          }
+          {* ブラウザ画面でプレイリスト・タグ出すモードでニュースはいらない *}
+          body.full_with_browser:not(.full_and_mini) .noNews #playerAlignmentArea{
+            margin-bottom: -37px;
+          }
           {* ニコるを消す *}
-          .nicoru-button{
+          .noNicoru .nicoru-button{
             left: -9999; display: none !important;
           }
-          .menuOpened #videoMenuTopList li.videoMenuListNicoru .nicoru-button{
+          .noNicoru .menuOpened #videoMenuTopList li.videoMenuListNicoru .nicoru-button{
             display: block !important;
           }
-          #videoTagContainer .tagInner #videoHeaderTagList li {
+          .noNicoru #videoTagContainer .tagInner #videoHeaderTagList li {
             margin: 0 18px 4px 0;
           }
 
+
+
+
+        */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
+
+        var __css__ = (function() {/*
           #videoHeaderDetail h2 {
             letter-spacing: -1px; {* たまに最後の1文字だけ改行されるのを防ぐ *}
           }
@@ -444,15 +519,6 @@
 
           #footer { z-index: 1;}
 
-          {* ニュース消す *}
-          #content.noNews #textMarquee {
-            display: none !important;
-          }
-          {* ブラウザ画面でプレイリスト・タグ出すモードでニュースはいらない *}
-          body.full_with_browser:not(.full_and_mini) .noNews #playerAlignmentArea{
-            margin-bottom: -37px;
-          }
-
           {* テレビちゃんメニュー スライドをやめる *}
           body #videoHeader #videoMenuWrapper{
             position: absolute; width: 324px; height: auto !important;
@@ -497,7 +563,7 @@
             height: auto !important; position: absolute;
           }
           body.size_medium:not(.videoExplorer):not(.setting_panel):not(.full_with_browser) #content.noNews              #playerTabWrapper {
-            bottom: -33px;
+            bottom: 0px;
           }
           body.size_medium:not(.videoExplorer):not(.setting_panel):not(.full_with_browser) #content.noNews .appli_panel #playerTabWrapper {
             bottom:  19px;
@@ -509,7 +575,7 @@
             bottom: 18px;
           }
           body.size_medium:not(.videoExplorer):not(.setting_panel):not(.full_with_browser) #content.noNews #playerAlignmentArea              #playerTabContainer {
-            bottom: 33px;
+            bottom: 0px;
           }
           body.size_medium:not(.videoExplorer):not(.setting_panel):not(.full_with_browser) #content.noNews #playerAlignmentArea .appli_panel #playerTabContainer {
             bottom: 19px;
@@ -562,9 +628,6 @@
             display: none !important;
           }
 
-          #playerAlignmentArea .playerBottomButton {
-            display: none;
-          }
           body:not(.videoExplorer):not(.full_with_browser).Shinjuku #playerAlignmentArea .playerBottomButton {
             display: block;
           }
@@ -606,7 +669,11 @@
             left: 0px;
             width: 120px;
           }
-
+          #playerAlignmentArea .toggleSetting {
+            left: auto;
+            right: 0px;
+            width: 64px;
+          }
 
           #wallImageContainer, #content.w_flat_white #wallImageContainer,
           #chipWallList,       #content.w_flat_white #chipWallList  {
@@ -632,7 +699,6 @@
           }
 
           #videoHeader .videoCounter {
-            display: none;
             position: absolute;
             right: 208px; bottom: 10px;
             width: 116px;
@@ -654,7 +720,34 @@
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__common_css__);
-        this.addStyle(__css__);
+        if (this.config.get('applyCss')) {
+          this.addStyle(__css__);
+        }
+      },
+      initializeUserConfig: function() {
+        var prefix = 'Shinjuku_';
+        var conf = {
+          noNews: true,
+          noNicoru: true,
+          dblclickAutoScroll: true,
+          autoScroll: true,
+          applyCss: true
+        };
+        this.config = {
+          get: function(key) {
+            try {
+              if (window.localStorage.hasOwnProperty(prefix + key)) {
+                return JSON.parse(window.localStorage.getItem(prefix + key));
+              }
+              return conf[key];
+            } catch (e) {
+              return conf[key];
+            }
+          },
+          set: function(key, value) {
+            window.localStorage.setItem(prefix + key, JSON.stringify(value));
+          }
+        };
       },
       initializeTag: function() {
         // タグ自動更新キャンセラー
@@ -667,8 +760,11 @@
        //  $('.toggleTagEditInner').empty().append($a);
       },
       initializeNicoru: function() {
-        // ニコる数を取得するためにコメントパネルがめちゃくちゃ重くなってるのを改善 (Chromeだとあまり変わらない)
-        window.WatchApp.ns.model.player.NicoPlayerConnector.getCommentNicoruCount = function() { return 0; };
+        if (this.config.get('noNicoru')) {
+          // ニコる数を取得するためにコメントパネルがめちゃくちゃ重くなってるのを改善 (Chromeだとあまり変わらない)
+          window.WatchApp.ns.model.player.NicoPlayerConnector.getCommentNicoruCount = function() { return 0; };
+          $('body').addClass('noNicoru');
+        }
       },
       initializeVideoExplorer: function() {
         var self = this;
@@ -938,19 +1034,22 @@
         };
         this.scrollToPlayer = scrollToPlayer;
 
-        this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
+        this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
           if (!$('#videoHeader').hasClass('infoActive')) {
             // ヘッダを閉じてる時はなにもしない
             return;
           }
-          scrollToPlayer();
-        });
+          if (this.config.get('autoScroll')) {
+            scrollToPlayer();
+          }
+        }, this));
 
-        $('html').on('dblclick', function(e) {
+        $('html').on('dblclick', $.proxy(function(e) {
+          if (!this.config.get('dblclickAutoScroll')) return;
           var $target = $(e.target);
           if ($target.hasClass('videoDescription')) return;
           scrollToPlayer();
-        });
+        }, this));
       },
       initializeQuickMylistFrame: function() {
         // ニコニコ動画(RC2) までプレイヤーの右上にあったマイリストメニューを復活させる
@@ -1055,6 +1154,79 @@
         };
         window.WatchApp.ns.init.PlayerInitializer.playerScreenMode.addEventListener('change', onScreenModeChange);
       },
+      initializeSettingPanel: function() {
+        var $menu   = $('<li class="shinjukuSettingMenu"><a href="javascript:;" title="ShinjukuWatchの設定変更">Shinjuku設定</a></li>');
+        var $panel  = $('<div id="shinjukuSettingPanel" />');//.addClass('open');
+        var $button = $('<button class="toggleSetting playerBottomButton">設定</botton>');
+
+        $button.on('click', function(e) {
+          e.stopPropagation(); e.preventDefault();
+          $panel.toggleClass('open');
+        });
+
+        var config = this.config;
+        $menu.find('a').on('click', function() { $panel.toggleClass('open'); });
+
+        var __tpl__ = (function() {/*
+          <div class="panelHeader">
+          <h1 class="windowTitle">ShinjukuWatchの設定</h1>
+          <p>設定はリロード後に反映されます</p>
+          <button class="close" title="閉じる">×</button>
+          </div>
+          <div class="panelInner">
+            <div class="item" data-setting-name="autoScroll" data-menu-type="radio">
+              <h3 class="itemTitle">初期化時にプレーヤーの位置にスクロール</h3>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+            <div class="item" data-setting-name="dblclickAutoScroll" data-menu-type="radio">
+              <h3 class="itemTitle">背景ダブルクリックでプレーヤーの位置にスクロール</h3>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+            <div class="item" data-setting-name="noNews" data-menu-type="radio">
+              <h3 class="itemTitle">ニコニコニュースを消す</h3>
+              <label><input type="radio" value="true" >消す</label>
+              <label><input type="radio" value="false">消さない</label>
+            </div>
+            <div class="item" data-setting-name="noNicoru" data-menu-type="radio">
+              <h3 class="itemTitle">ニコるを消す</h3>
+              <label><input type="radio" value="true" >消す</label>
+              <label><input type="radio" value="false">消さない</label>
+            </div>
+            <div class="item" data-setting-name="applyCss" data-menu-type="radio">
+              <h3 class="itemTitle">ShinjukuWatch標準のCSSを使用する</h3>
+              <small>他のuserstyleを使用する場合は「しない」を選択してください</small><br>
+              <label><input type="radio" value="true" > する</label>
+              <label><input type="radio" value="false"> しない</label>
+            </div>
+          </div>
+        */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
+        $panel.html(__tpl__);
+        $panel.find('.item').on('click', function(e) {
+          var $this = $(this);
+          var settingName = $this.attr('data-setting-name');
+          var value = JSON.parse($this.find('input:checked').val());
+          console.log('seting-name', settingName, 'value', value);
+          config.set(settingName, value);
+        }).each(function(e) {
+          var $this = $(this);
+          var settingName = $this.attr('data-setting-name');
+          var value = config.get(settingName);
+          $this.addClass(settingName);
+          $this.find('input').attr('name', settingName).val([JSON.stringify(value)]);
+        });
+        $panel.find('.close').click(function() {
+          $panel.removeClass('open');
+        });
+
+
+        $('#playerAlignmentArea').append($button);
+        $('#siteHeaderRightMenuFix').after($menu);
+        $('body').append($panel);
+
+
+      },
       initializeOther: function() {
         // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
         $('.videoDetailExpand h2').addClass('videoDetailToggleButton');
@@ -1081,13 +1253,14 @@
         if (location.href.indexOf('?ref=') >= 0) {
           window.history.replaceState('', '', location.href.split('?')[0]);
         }
-
-        $('#content').addClass('noNews'); // ニュース消す
-        // 通信を止める
-        var tmi = window.WatchApp.ns.init.TextMarqueeInitializer;
-        tmi.textMarqueeItemList.list.length = 0;
-        tmi.textMarqueeItemDispatcher.stop();
-        tmi.textMarqueeItemDispatcher.start = function() {};
+        if (this.config.get('noNews') === true) {
+          $('#content').addClass('noNews'); // ニュース消す
+          // 通信を止める
+          var tmi = window.WatchApp.ns.init.TextMarqueeInitializer;
+          tmi.textMarqueeItemList.list.length = 0;
+          tmi.textMarqueeItemDispatcher.stop();
+          tmi.textMarqueeItemDispatcher.start = function() {};
+        }
 
         this._playerAreaConnector.addEventListener('onVideoEnded', $.proxy(function() {
           // 原宿までと同じように、動画終了時にフルスクリーンを解除したい
