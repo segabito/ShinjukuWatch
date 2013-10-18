@@ -4,9 +4,13 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.0
+// @version     1.3.1
 // @grant       none
 // ==/UserScript==
+
+
+// ver1.3.1
+// - ブラウザ全画面時にコメント入力欄と操作パネルを自動で隠す設定を追加
 
 // ver1.3.0
 // - 設定パネルを追加
@@ -159,6 +163,7 @@
       initializeShinjuku: function() {
         this._watchInfoModel      = window.WatchApp.ns.init.CommonModelInitializer.watchInfoModel;
         this._playerAreaConnector = window.WatchApp.ns.init.PlayerInitializer.playerAreaConnector;
+        this._nicoPlayerConnector = window.WatchApp.ns.init.PlayerInitializer.nicoPlayerConnector;
 
         this.initializeUserConfig();
         this.initializeTag();
@@ -194,6 +199,8 @@
         var __common_css__ = (function() {/*
           {* ページの初期化中に横スクロールバーが出るのがうざい *}
           body:not(.Shinjuku) { overflow-x: hidden; }
+
+          #nicommendPanel, #nicommentPanelContainer .nicommendMymemory, #nicommentPanelContainer .nicommendCommunity { display: none !important; }
 
           .osusumeContainer {
             position: absolute;
@@ -330,6 +337,12 @@
           }
 
 
+
+          {* 真・browserFullモード *}
+          body.full_with_browser.hideCommentInput #nicoplayerContainerInner {
+            {* コメント入力欄は動画上表示にするのではなく、画面外に押し出す事によって見えなくする *}
+            margin-top: -10px; margin-bottom: -30px;
+          }
 
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
@@ -731,6 +744,7 @@
           noNicoru: true,
           dblclickAutoScroll: true,
           autoScroll: true,
+          hideControlInFull: true,
           applyCss: true
         };
         this.config = {
@@ -824,19 +838,10 @@
         $openVideoExplorer = null;
       },
       initializeNicommend: function() {
-        $('#nicommentPanelContainer').empty();
-        $('#playerTabContainer .playerTabItem.nicommend').text('オススメ');
-
-        // 終了時にニコメンドが勝手に開かなくするやつ
-        // 連続再生中はニコメンドパネルが開かない事を利用する
-        //var playerTab = WatchApp.ns.init.PlayerInitializer.playerTab;
-        //playerTab.playlist = {
-        //  isContinuous: function() {
-        //    return true;
-        //  }
-        //};
       },
       initializeOsusume: function() {
+        $('#playerTabContainer .playerTabItem.nicommend').text('オススメ');
+
         // 動画が切り替わるたびに関連動画(オススメ)をリロードする
         // でもYouTubeみたいに中身が全部入れ替わる方式だと「他に見たい奴もあったのに」を回収できなくて嫌
         // なので、n件までたまっていく方式にする
@@ -858,7 +863,7 @@
           items: [],
           $container: $('<div class="osusumeContainer" />'),
           initialize: function() {
-            $('#nicommentPanelContainer').empty().append(this.$container);
+            $('#nicommentPanelContainer').append(this.$container);
             this.$container.on('dblclick', function() {
               $(this).animate({scrollTop: 0}, 400);
             });
@@ -1134,20 +1139,30 @@
 
       },
       initializeScreenMode: function() {
-        var lastScreenMode = '', self = this;
+        var lastScreenMode = '', self = this, config = this.config;
+        var npc = this._nicoPlayerConnector;
 
         var onScreenModeChange = function(sc) {
           var mode = sc.mode;
           if (mode === 'browserFull' && lastScreenMode !== mode) {
             // フル画面時プレイリストを閉じる
             $('#content').find('.browserFullPlaylistClose:visible').click();
+            if (config.get('hideControlInFull')) {
+              $('body').addClass('hideCommentInput');
+              npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: false});
+            }
           } else
           if (lastScreenMode === 'browserFull' && mode !== 'browserFull') {
 
             // ウォールのせい?でheightが当たったままになるバグから回復
             $('#playerContainerSlideArea').css({height: ''});
+            if (config.get('hideControlInFull')) {
+              $('body').removeClass('hideCommentInput');
+              npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
+            }
+
             // 解除のたびにスクロール位置が一番上になってしまうので、いい感じの場所にする
-            window.setTimeout(function() { self.scrollToPlayer(true); }, 100);
+            window.setTimeout(function() { self.scrollToPlayer(true); }, 200);
 
           }
           lastScreenMode = mode;
@@ -1181,6 +1196,11 @@
             </div>
             <div class="item" data-setting-name="dblclickAutoScroll" data-menu-type="radio">
               <h3 class="itemTitle">背景ダブルクリックでプレーヤーの位置にスクロール</h3>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+            <div class="item" data-setting-name="hideControlInFull" data-menu-type="radio">
+              <h3 class="itemTitle">ブラウザ全画面時にコメント入力欄と操作パネルを隠す</h3>
               <label><input type="radio" value="true" >する</label>
               <label><input type="radio" value="false">しない</label>
             </div>
