@@ -4,10 +4,16 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.1
+// @version     1.3.2
 // @grant       none
 // ==/UserScript==
 
+
+// ver1.3.2
+// - 動画切り換え時にスクロール位置がずれてしまう問題の改善
+// - プレイリストを自動で消さない設定の追加
+// - 初回ロードにも常に関連動画をロードする設定の追加 (デフォルトはオフ)
+// - その他細かい挙動修正
 
 // ver1.3.1
 // - ブラウザ全画面時にコメント入力欄と操作パネルを自動で隠す設定を追加
@@ -124,9 +130,11 @@
         $($.browser.safari ? 'body' : 'html').scrollTop(0);
 
         window.close = function() {
+          window.setTimeout(function() { window.location.replace(window.location); }, 3000);
           return;
         };
         window.alert = function() {
+          // TODO: document.writeやめる
           document.write('<span style="position:absolute;top:0;left:0;font-size:8pt;color:red;">' + arguments[0] + '</span>');
         };
         })();
@@ -256,9 +264,14 @@
           }
 
           .quickMylistFrame {
-            position: absolute;
-            top: -999px;
+            position: fixed;
+            left: -9999px;
           }
+          .quickMylistFrame.updating {
+            position: fixed !important;
+            left: -9999px;
+          }
+
           #videoHeader .videoCounter {
             display: none;
           }
@@ -296,6 +309,7 @@
             padding: 8px;
             min-height: 300px;
             overflow-y: scroll;
+            max-height: 500px;
           }
           #shinjukuSettingPanel .panelInner .item {
             border-bottom: 1px dotted #888;
@@ -315,6 +329,11 @@
           }
           #shinjukuSettingPanel small {
             color: #666;
+          }
+          #shinjukuSettingPanel .expert {
+            margin: 32px 0 16px;
+            font-size: 150%;
+            background: #ccc;
           }
 
           {* ニュース消す *}
@@ -344,6 +363,8 @@
             margin-top: -10px; margin-bottom: -30px;
           }
 
+          #playerContainer      { height: auto !important; }
+          #videoTagContainerPin { display: none !important; } {* タグを固定しているか4行以上の時に現われるピン *}
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -623,6 +644,7 @@
             position: absolute;
             bottom: 13px;
             top: auto;
+            left: auto;
             right: 44px;
             width: 150px;
             height: 21px;
@@ -745,6 +767,8 @@
           dblclickAutoScroll: true,
           autoScroll: true,
           hideControlInFull: true,
+          autoClearPlaylist: true,
+          autoLoadRelatedVideo: false,
           applyCss: true
         };
         this.config = {
@@ -863,7 +887,7 @@
           items: [],
           $container: $('<div class="osusumeContainer" />'),
           initialize: function() {
-            $('#nicommentPanelContainer').append(this.$container);
+            $('#nicommentPanelContainer').prepend(this.$container);
             this.$container.on('dblclick', function() {
               $(this).animate({scrollTop: 0}, 400);
             });
@@ -884,6 +908,9 @@
               view_counter:   item.viewCounter,
               title:          item.title
             });
+          },
+          clear: function() {
+            this.items.length = 0;
           },
           refresh: function() {
             var uniq = {}, count = 0, items = this.items;
@@ -944,6 +971,9 @@
 
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
+          if (this.config.get('autoLoadRelatedVideo')) {
+            update();
+          }
           watchInfoModel.addEventListener('reset', function() {
             update();
           });
@@ -995,7 +1025,9 @@
           this.playlistController.toggle(true);
         } else {
           // プレイリストを空にする事で、プレーヤー上の「次の動画」「前の動画」ボタンを無効化して誤爆を防ぐことができる
-          this.playlistController.clear();
+          if (this.config.get('autoClearPlaylist')) {
+            this.playlistController.clear();
+          }
         }
 
         // 通信回数を減らすため、
@@ -1060,12 +1092,17 @@
         // ニコニコ動画(RC2) までプレイヤーの右上にあったマイリストメニューを復活させる
         // 昔はマイリスト登録が1クリックだったのにどうしてこうなった？
 
-        var $iframe = $('<iframe class="quickMylistFrame initialize" />'), watchInfoModel = this._watchInfoModel;
+        var $iframe = $('<iframe class="quickMylistFrame updating" />'), watchInfoModel = this._watchInfoModel;
 
         var update = function() {
+          $iframe.addClass('updating');
           var videoId = watchInfoModel.v;
           $iframe[0].contentWindow.location.replace("/mylist_add/video/" + videoId);
         };
+
+        $iframe.load(function() {
+          window.setTimeout(function() { $iframe.removeClass('updating')}, 500);
+        });
 
         $('#videoHeader').append($iframe);
 
@@ -1214,6 +1251,22 @@
               <label><input type="radio" value="true" >消す</label>
               <label><input type="radio" value="false">消さない</label>
             </div>
+
+            <div class="expert">
+              <h2>上級者向け設定</h2>
+            </div>
+            <div class="item" data-setting-name="autoClearPlaylist" data-menu-type="radio">
+              <h3 class="itemTitle">初回ロード時にプレイリストの中身を空にする</h3>
+              <small>空にする事によって「前の動画」「次の動画」ボタンが無効になり、誤クリックしなくなります</small><br>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+            <div class="item" data-setting-name="autoLoadRelatedVideo" data-menu-type="radio">
+              <h3 class="itemTitle">初回ロード時も常に関連動画をロードする</h3>
+              <small>通信を減らすため、通常は「しない」のままが推奨です</small><br>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
             <div class="item" data-setting-name="applyCss" data-menu-type="radio">
               <h3 class="itemTitle">ShinjukuWatch標準のCSSを使用する</h3>
               <small>他のuserstyleを使用する場合は「しない」を選択してください</small><br>
@@ -1267,12 +1320,6 @@
           refreshTitle();
         });
 
-        // ?ref=がついてるせいで未読既読のリンクの色が変わらなくなる問題の対策
-        // 自分のマイリストから飛んできた場合の ?group_id=xxxも消すべきか？は迷うところ
-        // これとは別にリンク側の?ref=も除去する必要があるが、単体のスクリプトが既に存在するので省略
-        if (location.href.indexOf('?ref=') >= 0) {
-          window.history.replaceState('', '', location.href.split('?')[0]);
-        }
         if (this.config.get('noNews') === true) {
           $('#content').addClass('noNews'); // ニュース消す
           // 通信を止める
@@ -1291,6 +1338,13 @@
         }, this));
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           $('body').addClass('Shinjuku');
+
+          // ?ref=がついてるせいで未読既読のリンクの色が変わらなくなる問題の対策
+          // 自分のマイリストから飛んできた場合の ?group_id=xxxも消すべきか？は迷うところ
+          // これとは別にリンク側の?ref=も除去する必要があるが、単体のスクリプトが既に存在するので省略
+          if (location.href.indexOf('?ref=') >= 0) {
+            window.history.replaceState('', '', location.href.split('?')[0]);
+          }
         });
       }
 
