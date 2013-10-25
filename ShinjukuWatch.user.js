@@ -4,10 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.2
+// @version     1.3.3
 // @grant       none
 // ==/UserScript==
 
+// ver1.3.3
+// - 動画説明文中のURLを自動リンク
 
 // ver1.3.2
 // - 動画切り換え時にスクロール位置がずれてしまう問題の改善
@@ -185,6 +187,7 @@
         this.initializeQuickMylistFrame();
         this.initializeVideoCounter();
         this.initializeScreenMode();
+        this.initializeVideoDescription();
         this.initializeSettingPanel();
         this.initializeOther();
 
@@ -751,6 +754,10 @@
             transition: none;
           }
 
+          .videoDescription .otherSite {
+            font-weight: bolder;
+          }
+
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -1299,6 +1306,48 @@
         $('body').append($panel);
 
 
+      },
+      initializeVideoDescription: function() {
+        var onclick = function(e) {
+          if (e.button !== 0 || e.metaKey || e.shiftKey || e.altKey || e.ctrlKey) return true;
+          if (e.target.tagName !== 'A') return;
+
+          var $target = $(e.target), href = $target.attr('href'), text = $target.text();
+          if (text.match(/^mylist\/(\d+)/)) {
+            e.preventDefault(); e.stopPropagation();
+            window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerController.showMylist(RegExp.$1);
+          } else
+          if ($target.hasClass('seekTime')) {
+            e.preventDefault(); e.stopPropagation();
+            var data = $target.attr('data-seekTime').split(":"), vpos = (data[0] * 60 + parseInt(data[1], 10)) * 1000;
+            window.WatchApp.ns.init.PlayerInitializer.nicoPlayerConnector.seekVideo(vpos);
+          }
+        };
+        // 動画説明文中のURLの自動リンク
+        var update = $.proxy(function() {
+          var html = this._watchInfoModel.description;
+          if (this._watchInfoModel.isChannelVideo()) return; // チャンネル動画は自前でリンク貼ってるので何もしない
+          var linkmatch = /<a.*?<\/a>/, links = [], n;
+          html = html.split('<br />').join(' <br /> ');
+          while ((n = linkmatch.exec(html)) !== null) {
+            links.push(n);
+            html = html.replace(n, ' <!----> ');
+          }
+          html = html.replace(/(https?:\/\/[\x21-\x3b\x3d-\x7e]+)/gi, '<a href="$1" target="_blank" class="otherSite">$1</a>');
+          for (var i = 0, len = links.length; i < len; i++) {
+            html = html.replace(' <!----> ', links[i]);
+          }
+          html = html.split(' <br /> ').join('<br />');
+          var $desc = $('<div>' +  html + '</div>').on('click', onclick);
+          $('#topVideoInfo .videoDescription').empty().append($desc);
+          $('#videoInfo    .videoDescription').empty().append($desc.clone(true));
+
+        }, this);
+        var up = function() { window.setTimeout(function() { update(); }, 1000); };
+
+        up();
+
+        this._watchInfoModel.addEventListener('reset', up);
       },
       initializeOther: function() {
         // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
