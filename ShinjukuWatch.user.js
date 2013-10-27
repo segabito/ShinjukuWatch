@@ -4,9 +4,13 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.3
+// @version     1.3.4
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.4
+// - 動画選択画面一列表示の時マイリストコメントが出るようにした
+// - 動画選択画面のサムネを原寸大表示
 
 // ver1.3.3
 // - 動画説明文中のURLを自動リンク
@@ -368,6 +372,18 @@
 
           #playerContainer      { height: auto !important; }
           #videoTagContainerPin { display: none !important; } {* タグを固定しているか4行以上の時に現われるピン *}
+
+          .column1 .itemMylistComment {
+            font-size: 85%; color: #666; display: none;
+            color: #400; border: 1px solid #ccc; padding: 0 4px 0px; line-height: 130%; border-radius: 4px;
+          }
+          .column1 .itemMylistComment:before {
+            content: 'マイリストコメント ';
+            background: #ccc; border-radius: 0 0 8px 0; display: inline-block; margin: 0 4px 4px -4px; padding: 2px;
+          }
+          .column1 .itemMylistComment:after {
+            content: '';
+          }
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -759,6 +775,73 @@
           }
 
 
+          {* 動画選択画面のサムネを4:3にする *}
+          body.videoExplorer #videoExplorer.squareThumbnail .column4 .item {
+            text-align: center;
+          }
+
+          body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer,
+          body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer .link {
+            width: 130px; height: 100px;
+          }
+          body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer {
+            padding: 0 15px;
+          }
+          body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer .thumbnail {
+            max-width: 130px; height: auto; top: 0; left: 0
+          }
+          body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer img.playingIcon {
+            top: 50%; left: 50%;
+          }
+
+          body.videoExplorer #videoExplorer.squareThumbnail .uadFrame {
+            width: 130px; height: 100px;
+            background-size: 100% 100%;
+          }
+          body.videoExplorer #videoExplorer.squareThumbnail .uadTagRelated .default .itemList .item .imageContainer {
+            width: 130px; height: 100px;
+          }
+
+          #videoExplorer .uadTagRelatedContainer .uadTagRelated .default .itemList .item .videoTitleContainer {
+            width: 130px;
+          }
+          #videoExplorer .uadTagRelatedContainer .uadTagRelated {
+            margin-bottom: 30px;
+          }
+
+          #videoExplorer .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper .itemImage {
+            width: 130px; height: auto; top: 0; left: 0;
+          }
+          #videoExplorer .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper {
+            width: 130px; height: 100px;
+          }
+           .uadTagRelated .emptyItem .emptyMessageContainer {
+            width: 130px; height: 100px;
+          }
+          .videoExplorerBody .videoExplorerContent .contentItemList .item .thumbnailContainer .nextPlayButton,
+          .videoExplorerBody .videoExplorerContent .suggestVideo    .item .thumbnailContainer .nextPlayButton {
+            right: 17px;
+            transition: transform 0.1s ease; -webkit-transition: -webkit-transform 0.1s ease;
+          }
+          .nextPlayButton {
+            transform: scale(1.5); -webkit-transform: scale(1.5);
+          }
+          .sideVideoInfo .nextPlayButton:hover {
+            -webkit-transform: scale(1.5); transform: scale(1.5);
+          }
+          .nextPlayButton:active, .sideVideoInfo .nextPlayButton:active {
+            -webkit-transform: scale(1.2); transform: scale(1.2);
+          }
+
+
+          {* ポイントが無いときは表示しない *}
+          .item:not(.silver):not(.gold) .uadContainer {
+            display: none !important;
+          }
+
+          #nicoSpotAd>button, #content.panel_ads_shown #leftPanelAd>button{
+             transform: scale(1.5); -webkit-transform: scale(1.5);
+          }
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__common_css__);
@@ -859,6 +942,31 @@
           }
           this.searchVideo_org(word, type);
         }, controller);
+
+
+        // 動画表示のテンプレート拡張
+        var $template = $('<div/>').html(window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerView._contentListView._$view.find('.videoItemTemplate').html());
+        $template.find('.column1')
+           .find('.descriptionShort').after($('<p class="itemMylistComment mylistComment"/>'))
+        window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerView._contentListView._$view.find('.videoItemTemplate').html($template.html());
+        $template = null;
+
+        // 動画情報表示処理の拡張
+        var ItemView = window.WatchApp.ns.components.videoexplorer.view.content.item.AbstractVideoContentItemView;
+        ItemView.prototype.update_org = ItemView.prototype.update;
+        ItemView.prototype.update = function() {
+          var item = this._item, $item = this._$item;
+          this.update_org(item);
+
+          // 動画情報表示をゴリゴリいじる場所
+          if (item._mylistComment) { // マイリストコメント
+            $item.find('.itemMylistComment').css({display: 'block'});
+          }
+        };
+        ItemView = null;
+        $('#videoExplorer').addClass('squareThumbnail');
+
+
 
         var $openVideoExplorer = $('<button class="openVideoExplorer playerBottomButton">検索</botton>');
         $openVideoExplorer.on('click', function(e) {
@@ -1061,10 +1169,13 @@
       initializeAutoScroll: function() {
         // プレーヤーの位置に自動スクロール
         var scrollToPlayer = function() {
+          var $body = $('body'), isContentFix = $body.hasClass('content-fix');
+          $body.removeClass('content-fix');
           var $pc = $('#playerContainer'), $vt = $('#videoTagContainer');
           var h = $pc.outerHeight() + $vt.outerHeight();
           var innerHeight = $(window).height();
-          if (innerHeight > h  + 200) {
+
+          if (innerHeight > h  + 200 && !$body.hasClass('videoExplorer')) {
           // 縦幅に余裕がある時はプレーヤーが画面中央に来るように
             var top = Math.max(($vt.offset().top + h / 2) - innerHeight / 2, 0);
 
@@ -1075,6 +1186,9 @@
             var topElement = innerHeight >= h ? '#videoTagContainer, #playerContainer' : '#playerContainer';
             WatchApp.ns.util.WindowUtil.scrollFitMinimum(topElement, 400);
           }
+
+          $(window).scrollLeft(0);
+          $body.toggleClass('content-fix', isContentFix);
         };
         this.scrollToPlayer = scrollToPlayer;
 
