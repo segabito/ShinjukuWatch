@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.5
+// @version     1.3.6
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.6
+// - 動画選択画面の中央揃え
 
 // ver1.3.4
 // - 動画選択画面一列表示の時マイリストコメントが出るようにした
@@ -844,6 +847,30 @@
           #nicoSpotAd>button, #content.panel_ads_shown #leftPanelAd>button{
              transform: scale(1.5); -webkit-transform: scale(1.5);
           }
+
+
+          {* 動画選択画面のセンタリング *}
+          body.videoExplorer #bottomContentTabContainer {
+            width: 1008px;
+            margin: auto;
+          }
+          body.size_small.no_setting_panel.videoExplorer #playlist {
+            width: 708px;
+            margin: auto;
+            box-shadow: none;
+          }
+          body.size_small.no_setting_panel.videoExplorer.content-fix #playlist{
+            min-width: 708px;
+          }
+          body.size_small.no_setting_panel.videoExplorer #playerContainerWrapper{
+            right: calc(50% + 204px);
+            left: auto;
+            box-shadow: none;
+          }
+          .videoExplorerContent {
+            padding: 20px 4px 20px 8px;
+          }
+
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__common_css__);
