@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.6
+// @version     1.3.7
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.7
+// - 本家の仕様変更に対応
 
 // ver1.3.6
 // - 動画選択画面の中央揃え
@@ -837,7 +840,9 @@
           .nextPlayButton:active, .sideVideoInfo .nextPlayButton:active {
             -webkit-transform: scale(1.2); transform: scale(1.2);
           }
-
+          .videoExplorerBody .videoExplorerContent .contentItemList .item .column1 .createdTime {
+            padding-left: 15px;
+          }
 
           {* ポイントが無いときは表示しない *}
           .item:not(.silver):not(.gold) .uadContainer {
@@ -1000,7 +1005,8 @@
         var $openVideoExplorer = $('<button class="openVideoExplorer playerBottomButton">検索</botton>');
         $openVideoExplorer.on('click', function(e) {
           e.stopPropagation(); e.preventDefault();
-          explorer.openByCurrentCondition();
+          WatchApp.ns.init.VideoExplorerInitializer.expandButtonView.open();
+          //explorer.openByCurrentCondition();
         });
         $('#playerAlignmentArea').append($openVideoExplorer);
         $openVideoExplorer = null;
