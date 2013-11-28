@@ -4,9 +4,16 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.7
+// @version     1.3.9
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.9
+// - 本家の内部仕様変更に対応
+// - Mac版Chromeで初回だけマイリストメニューが見えない問題の暫定対処
+
+// ver1.3.8
+// - 自動スクロールが若干軽くなったかも
 
 // ver1.3.7
 // - 本家の仕様変更に対応
@@ -194,7 +201,7 @@
         this.initializeIchiba();
         this.initializeOsusume();
         this.initializePlaylist();
-        this.initializeAutoScroll();
+        this.initializeScroll();
         this.initializeQuickMylistFrame();
         this.initializeVideoCounter();
         this.initializeScreenMode();
@@ -390,6 +397,10 @@
           }
           .column1 .itemMylistComment:after {
             content: '';
+          }
+
+          .w_noHover {
+            pointer-events: none !important;
           }
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
@@ -674,10 +685,12 @@
             right: 44px;
             width: 150px;
             height: 21px;
-            border: 0;
-            background: #555;
+            border: 1px solid #ccc;
+            background: #e7e7e7;
             border-radius: 4px;
-            padding: 9px 4px;
+            padding: 8px 4px;
+          }
+          .Shinjuku .quickMylistFrame:hover {
           }
 
           {* プレイリスト・タグ入り全画面の時に消すの忘れてた。 けどやっぱり便利そうなので残す事にした。 *}
@@ -876,6 +889,17 @@
             padding: 20px 4px 20px 8px;
           }
 
+          #videoHeaderMenu .searchContainer {
+            padding: 0 0 0 5px;
+            right: 0;
+          }
+          .searchContainer .searchText a {
+            border-radius: 4px 0 0 4px;
+          }
+          .searchContainer .searchText button {
+            border-radius: 0 4px 4px 0;
+          }
+
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__common_css__);
@@ -1021,9 +1045,9 @@
         // なので、n件までたまっていく方式にする
         var template = [
           '<li class="%class%">',
-            '<a href="/watch/%videoId%" class="thumbnail"><img src="%thumbnail%"></a>',
+            '<a href="%protocol%//%host%/watch/%videoId%" class="thumbnail"><img src="%thumbnail%"></a>',
             '%posted%',
-            '<a href="/watch/%videoId%" class="title">%title%</a>',
+            '<a href="%protocol%//%host%/watch/%videoId%" class="title">%title%</a>',
             '<p>再: <span class="count">%view%</span>',
             'コメ: <span class="count">%num_res%</span>',
             'マイ: <span class="count">%mylist%</span></p>',
@@ -1032,6 +1056,10 @@
         var relatedVideo   = new window.Shinjuku.ns.loader.RelatedVideo({});
         var watchInfoModel = this._watchInfoModel;
         var MAX_ITEMS = 100;
+
+        template = template
+          .split('%protocol%').join(location.protocol)
+          .split('%host%').join(location.host);
 
         var osusumeController = this.osusumeController = {
           items: [],
@@ -1201,11 +1229,11 @@
       },
       initializeIchiba: function() {
       },
-      initializeAutoScroll: function() {
+      initializeScroll: function() {
         // プレーヤーの位置に自動スクロール
         var scrollToPlayer = function() {
           var $body = $('body'), isContentFix = $body.hasClass('content-fix');
-          $body.removeClass('content-fix');
+          $body.removeClass('content-fix').addClass('w_noHover');
           var $pc = $('#playerContainer'), $vt = $('#videoTagContainer');
           var h = $pc.outerHeight() + $vt.outerHeight();
           var innerHeight = $(window).height();
@@ -1224,6 +1252,9 @@
 
           $(window).scrollLeft(0);
           $body.toggleClass('content-fix', isContentFix);
+          setTimeout(function() {
+            $body.removeClass('w_noHover');
+          }, 600);
         };
         this.scrollToPlayer = scrollToPlayer;
 
@@ -1243,12 +1274,31 @@
           if ($target.hasClass('videoDescription')) return;
           scrollToPlayer();
         }, this));
+
+        // スクロール中にマウスイベントを無効化して軽くする
+        (function() {
+          var hoverRestoreTimer = null, $body = $('body');
+          var hoverRestore = function() {
+            hoverRestoreTimer = clearTimeout(hoverRestoreTimer);
+            $body.removeClass('w_noHover');
+          };
+          var onScroll = function() {
+            $body.addClass('w_noHover');
+            if (hoverRestoreTimer) {
+              hoverRestoreTimer = clearTimeout(hoverRestoreTimer);
+            }
+            hoverRestoreTimer = setTimeout(hoverRestore, 500);
+          };
+
+          $(document).on('scroll', onScroll);
+        })();
+
       },
       initializeQuickMylistFrame: function() {
         // ニコニコ動画(RC2) までプレイヤーの右上にあったマイリストメニューを復活させる
         // 昔はマイリスト登録が1クリックだったのにどうしてこうなった？
 
-        var $iframe = $('<iframe class="quickMylistFrame updating" />'), watchInfoModel = this._watchInfoModel;
+        var $iframe = $('<iframe class="quickMylistFrame" />'), watchInfoModel = this._watchInfoModel;
 
         var update = function() {
           $iframe.addClass('updating');
@@ -1257,7 +1307,15 @@
         };
 
         $iframe.load(function() {
-          window.setTimeout(function() { $iframe.removeClass('updating')}, 500);
+          window.setTimeout(function() {
+            $iframe.addClass('updating').removeClass('updating');
+            var ua = window.navigator.userAgent.toLowerCase();
+            // TODO: Mac版Chromeで初回だけ表示されない問題の直し方を調べる
+            if (ua.indexOf('mac') >= 0 && ua.indexOf('chrome') >= 0) {
+              window.setTimeout(function() { $iframe.hide(); }, 2000);
+              window.setTimeout(function() { $iframe.show(); }, 4000);
+            }
+          }, 500);
         });
 
         $('#videoHeader').append($iframe);
