@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.9
+// @version     1.3.10
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.10
+// - 微妙なレイアウト崩れを調整
 
 // ver1.3.9
 // - 本家の内部仕様変更に対応
@@ -446,10 +449,13 @@
             height: auto !important;
             bottom: 0px;
             position: absolute;
-            min-height: 44px;
+            min-height: 48px;
           }
           #videoTagContainer .tagInner #videoHeaderTagList .toggleTagEdit {
-          height: auto; width: 72px; padding: 2px 4px;
+            height: auto; width: 72px; padding: 2px 4px;
+          }
+          #videoTagContainer .tagInner #videoHeaderTagList .toggleTagEditInner {
+            line-height: 22px; white-space: nowrap;
           }
           body:not(.full_with_browser) #content #videoTagContainer .tagInner #videoHeaderTagList {
             padding-left: 85px;
@@ -505,10 +511,13 @@
             margin-bottom: -12px;
           }
           #content .videoInformation{
-            margin: -4px 0 ;
+            margin: -4px 0;
           }
           #content #topVideoInfo .videoStats {
-            margin-bottom: 2px;
+            margin: 4px 0 0;
+          }
+          #content #topVideoInfo .videoInfoLeft {
+            margin: 4px 0 -10px;
           }
 
           body:not(.videoExplorer) #videoExplorerExpand { display: none; }
@@ -1275,7 +1284,10 @@
           scrollToPlayer();
         }, this));
 
-        // スクロール中にマウスイベントを無効化して軽くする
+        // CSS忍者より。スクロール中にマウスイベントを無効化することで動作を軽くするらしい。
+        // しかし、 Firefox等では「画面内にFlashPlayerが見えているか」のほうがスクロールの重さを左右するっぽくて、
+        // GINZAではあまり効果が感じられない。(ということは、動画選択画面で再生だけ止めてもあんまり軽くならない？)
+        // 副作用として、スクロール中の誤クリックでリンクを踏んでしまうのを抑止する効果も得られる
         (function() {
           var hoverRestoreTimer = null, $body = $('body');
           var hoverRestore = function() {
@@ -1306,15 +1318,18 @@
           $iframe[0].contentWindow.location.replace("/mylist_add/video/" + videoId);
         };
 
+        var isFirst = true;
+
         $iframe.load(function() {
           window.setTimeout(function() {
             $iframe.addClass('updating').removeClass('updating');
             var ua = window.navigator.userAgent.toLowerCase();
             // TODO: Mac版Chromeで初回だけ表示されない問題の直し方を調べる
-            if (ua.indexOf('mac') >= 0 && ua.indexOf('chrome') >= 0) {
+            if (isFirst && ua.indexOf('mac') >= 0 && ua.indexOf('chrome') >= 0) {
               window.setTimeout(function() { $iframe.hide(); }, 2000);
               window.setTimeout(function() { $iframe.show(); }, 4000);
             }
+            isFirst = false;
           }, 500);
         });
 
