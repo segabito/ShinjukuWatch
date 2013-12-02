@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.10
+// @version     1.3.11
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.11
+// - なんか増えてたソーシャルボタンを非表示化 する設定を追加
 
 // ver1.3.10
 // - 微妙なレイアウト崩れを調整
@@ -405,6 +408,24 @@
           .w_noHover {
             pointer-events: none !important;
           }
+
+          {* ソーシャルボタン *}
+          .area-JP .panel_ads_shown #playerTabContainer.w_noSocial.has_panel_ads .playerTabContent {
+            bottom: 80px;
+          }
+          .area-JP                  #playerTabContainer.w_noSocial               .playerTabContent {
+            bottom: 4px;
+          }
+          #playerTabContainer.w_noSocial .playerTabAds {
+            bottom: 0;
+          }
+          #playerTabContainer.w_noSocial .socialButtons{
+            display: none;
+          }
+          .w_noSocial .nicoSpotAds {
+            bottom: 8px;
+          }
+
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -926,6 +947,7 @@
           hideControlInFull: true,
           autoClearPlaylist: true,
           autoLoadRelatedVideo: false,
+          hideCommentPanelSocialButtons: true,
           applyCss: true
         };
         this.config = {
@@ -1480,6 +1502,12 @@
               <label><input type="radio" value="true" >消す</label>
               <label><input type="radio" value="false">消さない</label>
             </div>
+            <div class="item" data-setting-name="hideCommentPanelSocialButtons" data-menu-type="radio">
+              <h3 class="itemTitle">コメントパネルのソーシャルボタン</h3>
+              <label><input type="radio" value="true" >消す</label>
+              <label><input type="radio" value="false">消さない</label>
+            </div>
+
 
             <div class="expert">
               <h2>上級者向け設定</h2>
@@ -1598,6 +1626,9 @@
           tmi.textMarqueeItemList.list.length = 0;
           tmi.textMarqueeItemDispatcher.stop();
           tmi.textMarqueeItemDispatcher.start = function() {};
+        }
+        if (this.config.get('hideCommentPanelSocialButtons') === true) {
+          $('#playerTabContainer').addClass('w_noSocial');
         }
 
         this._playerAreaConnector.addEventListener('onVideoEnded', $.proxy(function() {
