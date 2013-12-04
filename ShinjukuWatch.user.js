@@ -4,9 +4,13 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.11
+// @version     1.3.12
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.12
+// - 本家側の仕様変更との競合でマイリスト連続再生が動かなくなっていたのを対応
+// - コメントの表示非表示状態を記憶するようにした
 
 // ver1.3.11
 // - なんか増えてたソーシャルボタンを非表示化 する設定を追加
@@ -213,6 +217,7 @@
         this.initializeScreenMode();
         this.initializeVideoDescription();
         this.initializeSettingPanel();
+        this.initializeCommentVisibility();
         this.initializeOther();
 
         this.initializeCss();
@@ -948,6 +953,7 @@
           autoClearPlaylist: true,
           autoLoadRelatedVideo: false,
           hideCommentPanelSocialButtons: true,
+          commentVisible: true,
           applyCss: true
         };
         this.config = {
@@ -1229,14 +1235,19 @@
 
         var items = this.playlistController.getItems();
 
-        if (location.href.indexOf('mylist_mode=playlist') >= 0) {
-          // マイリストページなどから「連続再生」で飛んできた場合はプレイリストを消さない
-          this.playlistController.toggle(true);
-        } else {
-          // プレイリストを空にする事で、プレーヤー上の「次の動画」「前の動画」ボタンを無効化して誤爆を防ぐことができる
-          if (this.config.get('autoClearPlaylist')) {
-            this.playlistController.clear();
+        //if (location.href.indexOf('mylist_mode=playlist') >= 0) { // 本家の仕様変更でこの判別ができなくなった
+        try {
+          if (WatchApp.ns.init.PlaylistInitializer.playlist.isContinuous()) {
+            // マイリストページなどから「連続再生」で飛んできた場合はプレイリストを消さない
+            this.playlistController.toggle(true);
+          } else {
+            // プレイリストを空にする事で、プレーヤー上の「次の動画」「前の動画」ボタンを無効化して誤爆を防ぐことができる
+            if (this.config.get('autoClearPlaylist')) {
+              this.playlistController.clear();
+            }
           }
+        } catch (e) {
+          console.log('本家の仕様変わったかも');
         }
 
         // 通信回数を減らすため、
@@ -1598,6 +1609,30 @@
         up();
 
         this._watchInfoModel.addEventListener('reset', up);
+      },
+      initializeCommentVisibility: function() {
+        var nicoPlayer = this._nicoPlayerConnector;
+
+        var commentVisible = function(v) {
+          if (typeof v === 'boolean') {
+            nicoPlayer.playerConfig.set({commentVisible: v});
+          } else {
+            var pc = nicoPlayer.playerConfig.get();
+            return pc.commentVisible;
+          }
+        };
+
+        var saveVisibility = $.proxy(function() {
+          this.config.set('commentVisible', commentVisible());
+        }, this);
+
+        var onFirstVideoInit = $.proxy(function() {
+          commentVisible(this.config.get('commentVisible'));
+          $(window).on('beforeunload.ShinjukuWatch', saveVisibility);
+        }, this);
+
+        this._playerAreaConnector.addEventListener('onFirstVideoInitialized', onFirstVideoInit);
+
       },
       initializeOther: function() {
         // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
