@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.12
+// @version     1.3.13
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.13
+// - ヘッダ開閉を少しわかりやすく
 
 // ver1.3.12
 // - 本家側の仕様変更との競合でマイリスト連続再生が動かなくなっていたのを対応
@@ -438,6 +441,9 @@
           #videoHeaderDetail h2 {
             letter-spacing: -1px; {* たまに最後の1文字だけ改行されるのを防ぐ *}
           }
+          {*body.Shinjuku #videoHeaderDetail {
+            width: calc(100% - 326px);
+          }*}
           #topVideoInfo .videoDescription{
             border: 1px solid #cccccc;
             border-radius: 4px 4px 4px 4px;
@@ -469,7 +475,11 @@
           #videoHeader #videoHeaderDetail {
             margin-top: 0 !important;
           }
-          #videoHeader .videoDetailExpand { height: auto !important; min-height: 32px;}
+          #videoHeader .videoDetailExpand {
+            height: auto !important;
+            padding: 4px 8px 0;
+            min-height: 32px;
+          }
           #videoTagContainer { height: auto !important; }
           body:not(.full_with_browser) #videoTagContainer .tagInner {
             height: auto !important;
@@ -496,6 +506,27 @@
           .videoDetailToggleButton {
             cursor: pointer;
           }
+
+          {* タイトルクリックでヘッダが開閉できるのをわかりやすく *}
+          .videoDetailToggleButton:hover {
+            text-decoration: underline;
+          }
+          .videoDetailToggleButton:hover:after {
+            content: '▼';
+            position: absolute;
+            width: 32px;
+            height: 20px;
+            top: 0;
+            bottom: 0;
+            right: -32px;
+            margin: auto;
+            color: #888;
+            font-size: 80%;
+          }
+          .infoActive .videoDetailToggleButton:hover:after {
+            content: '▲';
+          }
+
           .toggleDetailExpand, .shortVideoInfo {
             display: none !important;
           }
@@ -556,7 +587,7 @@
           body:not(.full_with_browser):not(.videoExplorer).size_normal #playlist {
             width: 1234px;
           }
-          #videoHeaderMenu .searchContainer { margin-top: -2px; padding: 0 5px; right: -3px; }
+          #videoHeaderMenu .searchContainer { margin-top: 1px; }
 
           #outline .sidebar {
             float: none !important;
@@ -1237,7 +1268,7 @@
 
         //if (location.href.indexOf('mylist_mode=playlist') >= 0) { // 本家の仕様変更でこの判別ができなくなった
         try {
-          if (WatchApp.ns.init.PlaylistInitializer.playlist.isContinuous()) {
+          if (this.playlistController.isContinuous()) {
             // マイリストページなどから「連続再生」で飛んできた場合はプレイリストを消さない
             this.playlistController.toggle(true);
           } else {
@@ -1357,10 +1388,11 @@
           window.setTimeout(function() {
             $iframe.addClass('updating').removeClass('updating');
             var ua = window.navigator.userAgent.toLowerCase();
-            // TODO: Mac版Chromeで初回だけ表示されない問題の直し方を調べる
+            // TODO: Mac版Chromeで初回だけ表示されない(あるのに見えない)問題の確実な直し方を調査
             if (isFirst && ua.indexOf('mac') >= 0 && ua.indexOf('chrome') >= 0) {
-              window.setTimeout(function() { $iframe.hide(); }, 2000);
-              window.setTimeout(function() { $iframe.show(); }, 4000);
+              //console.log('Mac chrome...');
+              window.setTimeout(function() { $iframe.hide(); },  1000);
+              window.setTimeout(function() { $iframe.show(); }, 10000);
             }
             isFirst = false;
           }, 500);
@@ -1466,6 +1498,13 @@
           }
           lastScreenMode = mode;
         };
+
+        this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
+          // フルスクリーンのまま別タブで開いたり、
+          // フルスクリーンのままFlashPlayerが落ちたりすると操作パネルが動画上に行ったままになってしまうので戻す。
+          // TODO: 自分で操作パネルを動画上に設定してる人を考慮するかどうか
+          npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
+        }, this));
         window.WatchApp.ns.init.PlayerInitializer.playerScreenMode.addEventListener('change', onScreenModeChange);
       },
       initializeSettingPanel: function() {
@@ -1645,7 +1684,7 @@
 
         var refreshTitle = function() {
           window.setTimeout(function() {
-            document.title = document.title.replace(/ニコニコ動画:Q$/, 'ニコニコ動画(新宿)');
+            document.title = document.title.replace(/ニコニコ動画:GINZA$/, 'ニコニコ動画(新宿)');
           }, 1000);
         };
         refreshTitle();
