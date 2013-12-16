@@ -210,7 +210,7 @@
         this.initializeTag();
         this.initializeNicoru();
         this.initializeVideoExplorer();
-        this.initializeNicommend();
+        this.initializePlayerTab();
         this.initializeIchiba();
         this.initializeOsusume();
         this.initializePlaylist();
@@ -434,6 +434,9 @@
             bottom: 8px;
           }
 
+          #playerTabContainer.osusumeTab .playerTabHeader .playerTabItem {
+            width: 108px;
+          }
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -1103,10 +1106,30 @@
         $('#playerAlignmentArea').append($openVideoExplorer);
         $openVideoExplorer = null;
       },
-      initializeNicommend: function() {
+      initializePlayerTab: function() {
+        if ($('.playerTabItem.nicommend').length > 0) {
+          $('#playerTabContainer .playerTabItem.nicommend').text('オススメ');
+          return;
+        }
+        // ニコメンドがなくなったらおそらくタブを自前で用意する必要がある
+        var tab = window.WatchApp.ns.init.PlayerInitializer.playerTab;
+        tab.reload = $.proxy(function() {
+          this.$contents = this.$items = null;
+          this._getTabItems().off('click').on('click', $.proxy(this._onClickTabItem, this));
+        }, tab);
+
+        (function() {
+          var $playerTab = $('#playerTabContainer').addClass('osusumeTab');
+          var $tabHeader = $('<th data-nico-tab-target="osusume" class="playerTabItem osusume">オススメ</th>');
+          var $tabBody   = $('<div id="osusumePanelContainer" class="playerTabContentItem osusume"></div>');
+
+          $playerTab.find('.playerTabHeader tr').append($tabHeader);
+          $playerTab.find('.playerTabContent').append($tabBody);
+
+          tab.reload();
+        })();
       },
       initializeOsusume: function() {
-        $('#playerTabContainer .playerTabItem.nicommend').text('オススメ');
 
         // 動画が切り替わるたびに関連動画(オススメ)をリロードする
         // でもYouTubeみたいに中身が全部入れ替わる方式だと「他に見たい奴もあったのに」を回収できなくて嫌
@@ -1133,7 +1156,7 @@
           items: [],
           $container: $('<div class="osusumeContainer" />'),
           initialize: function() {
-            $('#nicommentPanelContainer').prepend(this.$container);
+            $('#nicommentPanelContainer, #osusumePanelContainer').prepend(this.$container);
             this.$container.on('dblclick', function() {
               $(this).animate({scrollTop: 0}, 400);
             });
@@ -1208,12 +1231,16 @@
         };
 
         // 再生開始時にタブがコメントに変わるのはザッピングに邪魔なので切る
-        window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
-          'onVideoStarted',
-          window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoStarted);
-        window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
-          'onVideoEnded',
-          window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoEnded);
+        try {
+          window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
+            'onVideoStarted',
+            window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoStarted);
+          window.WatchApp.ns.init.PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
+            'onVideoEnded',
+            window.WatchApp.ns.init.PlayerInitializer.playerTab._onVideoEnded);
+        } catch (e) {
+          console.log('仕様変わった? ', e);
+        }
 
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
