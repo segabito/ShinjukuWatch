@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.14
+// @version     1.3.15
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.15
+// - 初回起動時に操作パネルの位置をリセットしない設定を追加(上級者用)
 
 // ver1.3.13
 // - ヘッダ開閉を少しわかりやすく
@@ -832,7 +835,7 @@
           .wallAlignmentArea.image2 {
             display: none !important;
           }
-          body:not(.videoExplorer):not(.full_with_browser) #content #playerContainer {
+          body:not(.videoExplorer):not(.full_with_browser) #content #playerContainer.oldTypeCommentInput.controll_panel {
             min-height: 461px;
           }
           body #wallImageContainer {
@@ -987,6 +990,7 @@
           autoClearPlaylist: true,
           autoLoadRelatedVideo: false,
           hideCommentPanelSocialButtons: true,
+          forceOldTypeControlPanel: true,
           commentVisible: true,
           applyCss: true
         };
@@ -1530,7 +1534,9 @@
           // フルスクリーンのまま別タブで開いたり、
           // フルスクリーンのままFlashPlayerが落ちたりすると操作パネルが動画上に行ったままになってしまうので戻す。
           // TODO: 自分で操作パネルを動画上に設定してる人を考慮するかどうか
-          npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
+          if (config.get('forceOldTypeControlPanel') == true) {
+            npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
+          }
         }, this));
         window.WatchApp.ns.init.PlayerInitializer.playerScreenMode.addEventListener('change', onScreenModeChange);
       },
@@ -1601,7 +1607,13 @@
               <label><input type="radio" value="true" >する</label>
               <label><input type="radio" value="false">しない</label>
             </div>
-            <div class="item" data-setting-name="applyCss" data-menu-type="radio">
+            <div class="item" data-setting-name="forceOldTypeControlPanel" data-menu-type="radio">
+              <h3 class="itemTitle">起動時に操作パネルの位置をリセットする</h3>
+              <small>操作パネルを動画プレイヤー上に設定している場合はオフにしてください</small><br>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+             <div class="item" data-setting-name="applyCss" data-menu-type="radio">
               <h3 class="itemTitle">ShinjukuWatch標準のCSSを使用する</h3>
               <small>他のuserstyleを使用する場合は「しない」を選択してください</small><br>
               <label><input type="radio" value="true" > する</label>
