@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.15
+// @version     1.3.16
 // @grant       none
 // ==/UserScript==
+
+// ver1.3.16
+// - ニコメンドまわりのコード除去
 
 // ver1.3.15
 // - 初回起動時に操作パネルの位置をリセットしない設定を追加(上級者用)
@@ -246,8 +249,6 @@
           {* ページの初期化中に横スクロールバーが出るのがうざい *}
           body:not(.Shinjuku) { overflow-x: hidden; }
 
-          #nicommendPanel, #nicommentPanelContainer .nicommendMymemory, #nicommentPanelContainer .nicommendCommunity { display: none !important; }
-
           .osusumeContainer {
             position: absolute;
                       top: 8px; right: 8px; bottom: 8px; left: 8px; padding: 4px;
@@ -308,6 +309,8 @@
           .quickMylistFrame.updating {
             position: fixed !important;
             left: -9999px;
+            opacity: 0;
+            visibility: hidden;
           }
 
           #videoHeader .videoCounter {
@@ -770,7 +773,7 @@
             top: 0; right: 0; padding: 4px 4px;
           }
 
-          #videoInfo, #nicommendContainer, #videoReview {
+          #videoInfo, #videoReview {
             display: none !important;
           }
 
@@ -1111,11 +1114,6 @@
         $openVideoExplorer = null;
       },
       initializePlayerTab: function() {
-        if ($('.playerTabItem.nicommend').length > 0) {
-          $('#playerTabContainer .playerTabItem.nicommend').text('オススメ');
-          return;
-        }
-        // ニコメンドがなくなったらおそらくタブを自前で用意する必要がある
         var tab = window.WatchApp.ns.init.PlayerInitializer.playerTab;
         tab.reload = $.proxy(function() {
           this.$contents = this.$items = null;
