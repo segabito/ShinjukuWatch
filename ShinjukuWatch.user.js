@@ -4,9 +4,13 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.16
+// @version     1.3.17
 // @grant       none
 // ==/UserScript==
+
+
+// ver1.3.17
+// - 本家の仕様変更に対応
 
 // ver1.3.16
 // - ニコメンドまわりのコード除去
@@ -166,7 +170,7 @@
         window.document.documentElement.scrollLeft = 0;
 
 
-        $($.browser.safari ? 'body' : 'html').scrollTop(0);
+        $('body, html').scrollTop(0);
 
         window.close = function() {
           window.setTimeout(function() { window.location.replace(window.location); }, 3000);
@@ -311,6 +315,7 @@
             left: -9999px;
             opacity: 0;
             visibility: hidden;
+            z-index: -1;
           }
 
           #videoHeader .videoCounter {
@@ -1382,21 +1387,39 @@
         // GINZAではあまり効果が感じられない。(ということは、動画選択画面で再生だけ止めてもあんまり軽くならない？)
         // 副作用として、スクロール中の誤クリックでリンクを踏んでしまうのを抑止する効果も得られる
         (function() {
-          var hoverRestoreTimer = null, $body = $('body');
+          var $body = $('body');
           var hoverRestore = function() {
-            hoverRestoreTimer = clearTimeout(hoverRestoreTimer);
             $body.removeClass('w_noHover');
           };
           var onScroll = function() {
             $body.addClass('w_noHover');
-            if (hoverRestoreTimer) {
-              hoverRestoreTimer = clearTimeout(hoverRestoreTimer);
-            }
-            hoverRestoreTimer = setTimeout(hoverRestore, 500);
           };
 
-          $(document).on('scroll', onScroll);
+          $(document)
+            .on('scroll', onScroll)
+            .on('scroll', _.debounce(hoverRestore, 500));
         })();
+
+        (function(watchInfoModel) {
+          // 動画切り換え時にページの一番上までスクロールするようになったのを強引に阻止する
+          // TODO: 動画プレイヤー位置の保持
+         window.WatchApp.ns.model.state.WatchPageRouter.getInstance()._scroll = function() { console.log('scroll killed ');};
+
+         var beforePlayerOffsetTop = 0, $playerAlignmentArea = $('#playerAlignmentArea');
+         var beforeReset = function() {
+            beforePlayerOffsetTop = $playerAlignmentArea.offset().top;
+         };
+         var afterReset = function() {
+           var diff = $playerAlignmentArea.offset().top - beforePlayerOffsetTop;
+           console.log('scroll diff', diff, $playerAlignmentArea.offset().top, beforePlayerOffsetTop);
+           var scrollTop = $(window).scrollTop();
+           $('body, html').scrollTop(scrollTop + diff);
+         };
+
+         watchInfoModel.addEventListener('beforeReset', beforeReset);
+         watchInfoModel.addEventListener('afterReset',  afterReset);
+        })(this._watchInfoModel);
+
 
       },
       initializeQuickMylistFrame: function() {
