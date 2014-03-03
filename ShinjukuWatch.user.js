@@ -1403,7 +1403,7 @@
         (function(watchInfoModel) {
           // 動画切り換え時にページの一番上までスクロールするようになったのを強引に阻止する
           // TODO: 動画プレイヤー位置の保持
-         window.WatchApp.ns.model.state.WatchPageRouter.getInstance()._scroll = function() { console.log('scroll killed ');};
+         window.WatchApp.ns.model.state.WatchPageRouter.getInstance()._scroll = function() {};
 
          var beforePlayerOffsetTop = 0, $playerAlignmentArea = $('#playerAlignmentArea');
          var beforeReset = function() {
@@ -1411,7 +1411,6 @@
          };
          var afterReset = function() {
            var diff = $playerAlignmentArea.offset().top - beforePlayerOffsetTop;
-           console.log('scroll diff', diff, $playerAlignmentArea.offset().top, beforePlayerOffsetTop);
            var scrollTop = $(window).scrollTop();
            $('body, html').scrollTop(scrollTop + diff);
          };
