@@ -1412,7 +1412,7 @@
          var afterReset = function() {
            var diff = $playerAlignmentArea.offset().top - beforePlayerOffsetTop;
            var scrollTop = $(window).scrollTop();
-           $('body, html').scrollTop(scrollTop + diff);
+           $(window).scrollTop(scrollTop + diff);
          };
 
          watchInfoModel.addEventListener('beforeReset', beforeReset);
