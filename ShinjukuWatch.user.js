@@ -4,11 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.17
+// @version     1.3.19
 // @grant       none
 // ==/UserScript==
 
 
+// ver1.3.18
 // ver1.3.17
 // - 本家の仕様変更に対応
 
@@ -135,7 +136,6 @@
           .css({
             position: 'absolute',
             top: 0,
-//            right: '50px',
             bottom: 0,
             left: 0,
             fontSize: '11pt',
@@ -156,7 +156,6 @@
             top: 0,
             right: 0,
             bottom: 0,
-//            left: '100px',
             width: '50px',
             fontSize: '10pt',
             margin: 0, 'border-radius': '0 4px 4px 0', 'border-width': '1px',
@@ -447,6 +446,10 @@
 
           #playerTabContainer.osusumeTab .playerTabHeader .playerTabItem {
             width: 108px;
+          }
+
+          button::-moz-focus-inner {
+            border: 0px;
           }
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
@@ -980,6 +983,29 @@
             border-radius: 0 4px 4px 0;
           }
 
+
+          .item.thumbnailLoadSuccess .noImage, #videoExplorer.w_adjusted .item .thumbnail {
+            display: none !important;
+          }
+          #videoExplorer .thumbnailContainer {
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center center;
+          }
+          #videoExplorer .item .thumbnailContainer {
+            width: 130px; height: 100px;
+          }
+
+          #videoExplorer .uadFrame {
+            width: 130px; height: 100px;
+            background-size: 100% 100%;
+          }
+          #videoExplorer .uadTagRelated .default .itemList .item .imageContainer {
+            width: 130px; height: 100px;
+          }
+
+
+
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__common_css__);
@@ -1103,6 +1129,11 @@
           if (item._mylistComment) { // マイリストコメント
             $item.find('.itemMylistComment').css({display: 'block'});
           }
+
+          this._$item.find('.thumbnailContainer')
+            .css('background-image', 'url(' + item.getThumbnailUrl() + ')');
+
+
         };
         ItemView = null;
         $('#videoExplorer').addClass('squareThumbnail');
@@ -1392,7 +1423,9 @@
             $body.removeClass('w_noHover');
           };
           var onScroll = function() {
-            $body.addClass('w_noHover');
+            if (!$body.hasClass('w_noHover')) {
+              $body.addClass('w_noHover');
+            }
           };
 
           $(document)
@@ -1414,6 +1447,9 @@
            var scrollTop = $(window).scrollTop();
            $(window).scrollTop(scrollTop + diff);
          };
+
+         // プレイヤーが画面に入るまで自動再生されなくなったのに対抗
+         window.WatchApp.ns.util.WindowUtil.checkInview = function() { return true; };
 
          watchInfoModel.addEventListener('beforeReset', beforeReset);
          watchInfoModel.addEventListener('afterReset',  afterReset);
@@ -1692,6 +1728,7 @@
             links.push(n);
             html = html.replace(n, ' <!----> ');
           }
+          html = html.replace(/\((https?:\/\/[\x21-\x3b\x3d-\x7e]+)\)/gi, '( $1 )');
           html = html.replace(/(https?:\/\/[\x21-\x3b\x3d-\x7e]+)/gi, '<a href="$1" target="_blank" class="otherSite">$1</a>');
           for (var i = 0, len = links.length; i < len; i++) {
             html = html.replace(' <!----> ', links[i]);
