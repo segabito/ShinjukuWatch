@@ -4,10 +4,15 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.19
+// @version     1.3.20
 // @grant       none
 // ==/UserScript==
 
+// 1.3.20
+// - オススメタブだけ有効にするモードを追加 (WatchItLaterやCustomGinzaWatchと併用する用途など)
+
+// 1.3.19
+// - 本家の仕様変更で再生終了時にフルスクリーン解除されるようになったのでShinjukuWatch側の処理を削除
 
 // ver1.3.18
 // ver1.3.17
@@ -207,15 +212,19 @@
     window.WatchApp.mixin(window.Shinjuku, {
       initialize: function() {
         if (window.WatchApp && window.WatchJsApi) { // WatchAppだけだとコメント編集画面にも来てしまうため
-          this.initializeShinjuku();
+          this.initializeUserConfig();
+          this._watchInfoModel      = window.WatchApp.ns.init.CommonModelInitializer.watchInfoModel;
+          this._playerAreaConnector = window.WatchApp.ns.init.PlayerInitializer.playerAreaConnector;
+          this._nicoPlayerConnector = window.WatchApp.ns.init.PlayerInitializer.nicoPlayerConnector;
+
+           if (this.config.get('osusumeOnly') || window.WatchItLater) {
+            this.initializeOsusumeOnly();
+          } else {
+            this.initializeShinjuku();
+          }
         }
       },
       initializeShinjuku: function() {
-        this._watchInfoModel      = window.WatchApp.ns.init.CommonModelInitializer.watchInfoModel;
-        this._playerAreaConnector = window.WatchApp.ns.init.PlayerInitializer.playerAreaConnector;
-        this._nicoPlayerConnector = window.WatchApp.ns.init.PlayerInitializer.nicoPlayerConnector;
-
-        this.initializeUserConfig();
         this.initializeTag();
         this.initializeNicoru();
         this.initializeVideoExplorer();
@@ -233,6 +242,15 @@
         this.initializeOther();
 
         this.initializeCss();
+      },
+      initializeOsusumeOnly: function() {
+        this._isOsusumeOnly = true;
+        this.initializePlayerTab();
+        this.initializeOsusume();
+        this.initializeSettingPanel();
+        this.initializeCss();
+//        this.osusumeController.refresh();
+//        $('body').addClass('Shinjuku');
       },
       addStyle: function(styles, id) {
         var elm = document.createElement('style');
@@ -263,6 +281,7 @@
             bottom: 0px;
           }
           .osusumeContainer li  {
+            position: relative;
             margin-bottom: 8px;
             padding: 4px;
             border-bottom: 1px solid #ccc;
@@ -304,6 +323,33 @@
           .osusumeContainer li:after {
             content: ''; clear: both;
           }
+
+          .osusumeContainer .nextPlayButton {
+            display: none;
+          }
+
+          .osusumeContainer.withWatchItLater .nextPlayButton {
+            position: absolute;
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            right: 0;
+            bottom: 0;
+            background: url(http://res.nimg.jp/img/watch_q9/icon_nextplay.png);
+            z-index: 100;
+            cursor: pointer;
+            text-indent: -999em;
+            overflow: hidden;
+            -webkit-transform: scale(1.0); transform: scale(1.0);
+          }
+          .osusumeContainer.withWatchItLater .nextPlayButton:hover {
+            -webkit-transform: scale(1.5); transform: scale(1.5);
+          }
+          .osusumeContainer.withWatchItLater .nextPlayButton:active {
+            -webkit-transform: scale(1.2); transform: scale(1.2);
+          }
+
+
 
           .quickMylistFrame {
             position: fixed;
@@ -902,24 +948,26 @@
             width: 130px; height: 100px;
             background-size: 100% 100%;
           }
-          body.videoExplorer #videoExplorer.squareThumbnail .uadTagRelated .default .itemList .item .imageContainer {
+
+          .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer {
             width: 130px; height: 100px;
           }
 
-          #videoExplorer .uadTagRelatedContainer .uadTagRelated .default .itemList .item .videoTitleContainer {
+          .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer .videoTitleContainer {
             width: 130px;
+            text-align: center;
           }
-          #videoExplorer .uadTagRelatedContainer .uadTagRelated {
+          #videoExplorer.squareThumbnail .uadTagRelated {
             margin-bottom: 30px;
           }
 
-          #videoExplorer .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper .itemImage {
+          .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper .itemImage {
             width: 130px; height: auto; top: 0; left: 0;
           }
-          #videoExplorer .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper {
+          .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper {
             width: 130px; height: 100px;
           }
-           .uadTagRelated .emptyItem .emptyMessageContainer {
+          .uadTagRelated .emptyItem .emptyMessageContainer {
             width: 130px; height: 100px;
           }
           .videoExplorerBody .videoExplorerContent .contentItemList .item .thumbnailContainer .nextPlayButton,
@@ -984,7 +1032,7 @@
           }
 
 
-          .item.thumbnailLoadSuccess .noImage, #videoExplorer.w_adjusted .item .thumbnail {
+          .item.thumbnailLoadSuccess .noImage, #videoExplorer.squareThumbnail .item .thumbnail {
             display: none !important;
           }
           #videoExplorer .thumbnailContainer {
@@ -1009,7 +1057,7 @@
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         this.addStyle(__common_css__);
-        if (this.config.get('applyCss')) {
+        if (this.config.get('applyCss') && !this.config.get('osusumeOnly')) {
           this.addStyle(__css__);
         }
       },
@@ -1026,6 +1074,7 @@
           hideCommentPanelSocialButtons: true,
           forceOldTypeControlPanel: true,
           commentVisible: true,
+          osusumeOnly: false,
           applyCss: true
         };
         this.config = {
@@ -1177,6 +1226,7 @@
             '<a href="%protocol%//%host%/watch/%videoId%" class="thumbnail"><img src="%thumbnail%"></a>',
             '%posted%',
             '<a href="%protocol%//%host%/watch/%videoId%" class="title">%title%</a>',
+            '<div class="nextPlayButton" title="次に再生" onclick="WatchItLater.WatchController.insertVideoToPlaylist(\'%videoId%\')">次に再生</div>',
             '<p>再: <span class="count">%view%</span>',
             'コメ: <span class="count">%num_res%</span>',
             'マイ: <span class="count">%mylist%</span></p>',
@@ -1197,6 +1247,10 @@
             $('#nicommentPanelContainer, #osusumePanelContainer').prepend(this.$container);
             this.$container.on('dblclick', function() {
               $(this).animate({scrollTop: 0}, 400);
+            }).on('scroll', function() {
+              if (window.WatchItLater && window.WatchItLater.popup) {
+                window.WatchItLater.popup.hidePopup();
+              }
             });
           },
           add: function(item) {
@@ -1250,6 +1304,7 @@
             this.$container
               .html(view.join(''))
               .scrollTop(0)
+              .toggleClass('withWatchItLater', typeof window.WatchItLater === 'object')
               .find('.otherVideoRelated:first')
               .addClass('first')
               .before($('<li class="previousOsusume">前の動画のオススメ</li>'));
@@ -1282,7 +1337,7 @@
 
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
-          if (this.config.get('autoLoadRelatedVideo')) {
+          if (this.config.get('autoLoadRelatedVideo') || this._isOsusumeOnly) {
             update();
           }
           watchInfoModel.addEventListener('reset', function() {
@@ -1430,7 +1485,7 @@
 
           $(document)
             .on('scroll', onScroll)
-            .on('scroll', _.debounce(hoverRestore, 500));
+            .on('scroll', window._.debounce(hoverRestore, 500));
         })();
 
         (function(watchInfoModel) {
@@ -1669,6 +1724,12 @@
               <label><input type="radio" value="true" >する</label>
               <label><input type="radio" value="false">しない</label>
             </div>
+            <div class="item" data-setting-name="osusumeOnly" data-menu-type="radio">
+              <h3 class="itemTitle">オススメタブの機能だけを使う</h3>
+              <small>他のスクリプトにオススメタブだけ欲しい場合など</small><br>
+              <label><input type="radio" value="true" > する</label>
+              <label><input type="radio" value="false"> しない</label>
+            </div>
              <div class="item" data-setting-name="applyCss" data-menu-type="radio">
               <h3 class="itemTitle">ShinjukuWatch標準のCSSを使用する</h3>
               <small>他のuserstyleを使用する場合は「しない」を選択してください</small><br>
@@ -1801,13 +1862,7 @@
           $('#playerTabContainer').addClass('w_noSocial');
         }
 
-        this._playerAreaConnector.addEventListener('onVideoEnded', $.proxy(function() {
-          // 原宿までと同じように、動画終了時にフルスクリーンを解除したい
-          // ただし、連続再生中は解除しない
-          if ($('body').hasClass('full_with_browser') && !this.playlistController.isContinuous()) {
-            window.WatchJsApi.player.changePlayerScreenMode('notFull');
-          }
-        }, this));
+
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           $('body').addClass('Shinjuku');
 
