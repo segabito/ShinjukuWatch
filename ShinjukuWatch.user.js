@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.20
+// @version     1.3.22
 // @grant       none
 // ==/UserScript==
 
@@ -195,15 +195,28 @@
       },
       load: function(watchId) {
         var def = new $.Deferred();
+        var timeoutTimer = null;
+
         window.WatchApp.ns.init.VideoExplorerInitializer.relatedVideoAPILoader.load(
           {'video_id': watchId},
           function(err, result) {
+            if (timeoutTimer) {
+              window.clearTimeout(timeoutTimer);
+              timeoutTimer = null;
+            }
             if (err !== null) {
               return def.reject({message: '通信に失敗しました(1)', status: 'fail', err: err});
             }
             return def.resolve(result);
           }
         );
+
+        timeoutTimer = window.setTimeout(function() {
+          if (timeoutTimer) {
+            def.reject({message: '通信に失敗しました(2)', status: 'fail', err: 'timeout'});
+          }
+        }, 30 * 1000);
+
         return def.promise();
       }
     };
@@ -1305,6 +1318,13 @@
               .html(view.join(''))
               .scrollTop(0)
               .toggleClass('withWatchItLater', typeof window.WatchItLater === 'object')
+              .on('click', '.thumbnail img', function(e) {
+                if (!window.WatchItLater) { return; }
+                if (!e.target.src) { return; }
+                e.preventDefault();
+                e.stopPropagation();
+                WatchItLater.WatchController.showLargeThumbnail(e.target.src);
+              })
               .find('.otherVideoRelated:first')
               .addClass('first')
               .before($('<li class="previousOsusume">前の動画のオススメ</li>'));
@@ -1314,11 +1334,13 @@
         osusumeController.initialize();
 
         var update = function() {
-          relatedVideo.load(watchInfoModel.v).pipe(function(result) {
+          relatedVideo.load(watchInfoModel.v).then(function(result) {
             var items = result.list;
             for (var i = items.length - 1; i >= 0; i--) {
               if (items[i].type === 0 /* video */) osusumeController.add(items[i]);
             }
+            osusumeController.refresh();
+          }, function() {
             osusumeController.refresh();
           });
         };
