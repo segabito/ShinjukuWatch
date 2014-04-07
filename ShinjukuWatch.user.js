@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.22
+// @version     1.3.23
 // @grant       none
 // ==/UserScript==
 
@@ -946,6 +946,7 @@
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer,
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer .link {
             width: 130px; height: 100px;
+            background-color: transparent !important;
           }
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer {
             padding: 0 15px;
