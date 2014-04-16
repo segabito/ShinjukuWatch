@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.23
+// @version     1.3.24
 // @grant       none
 // ==/UserScript==
 
@@ -1901,7 +1901,24 @@
 
     });
 
-    window.Shinjuku.initialize();
+    if (window.PlayerApp) {
+      (function() {
+        var watchInfoModel = WatchApp.ns.model.WatchInfoModel.getInstance();
+        if (watchInfoModel.initialized) {
+          window.Shinjuku.initialize();
+        } else {
+          var onReset = function() {
+            watchInfoModel.removeEventListener('reset', onReset);
+            window.setTimeout(function() {
+              watchInfoModel.removeEventListener('reset', onReset);
+              window.Shinjuku.initialize();
+            }, 0);
+          };
+          watchInfoModel.addEventListener('reset', onReset);
+        }
+      })();
+    }
+
 
   });
 
