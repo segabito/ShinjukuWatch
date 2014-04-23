@@ -269,17 +269,15 @@
       },
       addStyle: function(styles, id) {
         var elm = document.createElement('style');
-        window.setTimeout(function() {
-          elm.type = 'text/css';
-          if (id) { elm.id = id; }
+        elm.type = 'text/css';
+        if (id) { elm.id = id; }
 
-          var text = styles.toString();
-          text = document.createTextNode(text);
-          elm.appendChild(text);
-          var head = document.getElementsByTagName('head');
-          head = head[0];
-          head.appendChild(elm);
-        }, 0);
+        var text = styles.toString();
+        text = document.createTextNode(text);
+        elm.appendChild(text);
+        var head = document.getElementsByTagName('head');
+        head = head[0];
+        head.appendChild(elm);
         return elm;
       },
       initializeCss: function() {
@@ -1571,7 +1569,6 @@
         });
 
         $('#videoHeader').append($iframe);
-
         update();
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
