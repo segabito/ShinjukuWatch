@@ -1568,10 +1568,12 @@
           }, 500);
         });
 
+        $iframe.css({position: 'fixed', top: '-9999px', bottom: 'auto'});
         $('#videoHeader').append($iframe);
         update();
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
+          $iframe.css({position: '', top: '', bottom: ''});
           watchInfoModel.addEventListener('reset', function() {
             update();
           });
