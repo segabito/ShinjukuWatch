@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.24
+// @version     1.3.25
 // @grant       none
 // ==/UserScript==
 
@@ -224,6 +224,7 @@
 
     window.WatchApp.mixin(window.Shinjuku, {
       initialize: function() {
+        window.console.time('init Shinjuku');
         if (window.WatchApp && window.WatchJsApi) { // WatchAppだけだとコメント編集画面にも来てしまうため
           this.initializeUserConfig();
           this._watchInfoModel      = window.WatchApp.ns.init.CommonModelInitializer.watchInfoModel;
@@ -236,6 +237,7 @@
             this.initializeShinjuku();
           }
         }
+        window.console.timeEnd('init Shinjuku');
       },
       initializeShinjuku: function() {
         this.initializeTag();
@@ -267,15 +269,17 @@
       },
       addStyle: function(styles, id) {
         var elm = document.createElement('style');
-        elm.type = 'text/css';
-        if (id) { elm.id = id; }
+        window.setTimeout(function() {
+          elm.type = 'text/css';
+          if (id) { elm.id = id; }
 
-        var text = styles.toString();
-        text = document.createTextNode(text);
-        elm.appendChild(text);
-        var head = document.getElementsByTagName('head');
-        head = head[0];
-        head.appendChild(elm);
+          var text = styles.toString();
+          text = document.createTextNode(text);
+          elm.appendChild(text);
+          var head = document.getElementsByTagName('head');
+          head = head[0];
+          head.appendChild(elm);
+        }, 0);
         return elm;
       },
       initializeCss: function() {
@@ -763,6 +767,9 @@
             display: inline-block;
             width: 60px;
           }
+          body #videoHeader.menuOpened .videoShareLinks {
+            visibility: hidden; pointer-events: none !important;
+          }
 
           {* テレビちゃんメニューのスライド殺す *}
           body #videoHeader.menuOpened #videoMenuWrapper {
@@ -1194,7 +1201,7 @@
           }
 
           this._$item.find('.thumbnailContainer')
-            .css('background-image', 'url(' + item.getThumbnailUrl() + ')');
+            .css('background-image', 'url(' + this._$thumbnail.attr('src') + ')');
 
 
         };
