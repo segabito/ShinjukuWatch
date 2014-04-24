@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.25
+// @version     1.3.26
 // @grant       none
 // ==/UserScript==
 
@@ -147,7 +147,8 @@
             border: 0, margin: 0, 'border-radius': '4px 0 0 4px',
             width: '100px'
           })
-          .addClass('mylistSelect');
+          .addClass('mylistSelect')
+          .find('option[value=new]').remove();
         $('select')[0].selectedIndex = $('select')[0].options.length - 1;
         $('#select_group option:last')[0].innerHTML = 'とりあえずマイリスト';
 
@@ -765,7 +766,8 @@
             display: inline-block;
             width: 60px;
           }
-          body #videoHeader.menuOpened .videoShareLinks {
+          body #videoHeader.menuOpened .videoShareLinks .socialLinkFacebook{
+            position: fixed; top: -9999px;
             visibility: hidden; pointer-events: none !important;
           }
 
@@ -1071,6 +1073,11 @@
             width: 130px; height: 100px;
           }
 
+
+          {* たまに初期化中に縦にびろーんとなってる犯人がfacebookアイコン *}
+          body:not(.Shinjuku) #videoHeader .videoShareLinks .socialLinkFacebook{
+            position: fixed; top: -9999px; overflow: hidden;
+          }
 
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
