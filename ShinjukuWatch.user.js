@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.3.26
+// @version     1.4.0
 // @grant       none
 // ==/UserScript==
+
+// 1.4.0
+// - ウィンドウサイズに合わせてプレイヤーを大きくする機能を追加 (中画面は変わらない)
 
 // 1.3.20
 // - オススメタブだけ有効にするモードを追加 (WatchItLaterやCustomGinzaWatchと併用する用途など)
@@ -222,6 +225,172 @@
       }
     };
 
+    window.Shinjuku.ns.NicoplayerResizer = function() { this.initialize.apply(this, arguments); };
+
+    window.Shinjuku.ns.NicoplayerResizer.prototype = {
+      initialize: function() {
+        this._customStyleElement = null;
+        this._lastCssName = null;
+
+        window.setTimeout($.proxy(function() {
+          this._updateStyle();
+          this._toggleSize(true);
+        }, this), 0);
+
+        $(window).on('resize',
+          window._.debounce(
+            $.proxy(function() {
+              this._updateStyle();
+            },
+          this),
+        500));
+      },
+      _getCssTemplate: function() {
+         var tpl = (function() {/*
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #playerAlignmentArea
+           { width: {$alignmentAreaWidth}px; }
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) .w_wide #playerAlignmentArea
+           { width: {$alignmentAreaWideWidth}px; }
+
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #nicoplayerContainer {
+             height: {$playerHeight}px !important;
+           }
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #playerNicoplayer
+           { width: {$playerWidth}px !important;}
+
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #external_nicoplayer
+           { width: {$playerWidth}px !important; height: {$playerHeight}px !important; }
+
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #nicoHeatMapContainer {
+             width: {$playerWidth}px !important;
+           }
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #nicoHeatMap {
+             transform: scaleX({$heatMapScale}); -webkit-transform: scaleX({$heatMapScale});
+           }
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #smart_music_kiosk {
+             -webkit-transform: scaleX({$songriumScale}); -webkit-transform-origin: 0 0;
+           }
+
+           body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #inspire_category {
+            left: {$songriumCategoryLeft}px !important;
+           }
+
+           */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
+        return tpl;
+      },
+      _isFixedHeader: function() {
+        return !$('body').hasClass('nofix');
+      },
+      _isNormalPlayerMode: function() {
+        var $body = $('body');
+        if ($body.hasClass('full_with_browser') ||
+            $body.hasClass('videoExplorer')) {
+          return false;
+        }
+        return true;
+      },
+      _getPlayerTabWidth: function() {
+        return 326 + 10; // (conf.wideCommentPanel ? PLAYER_TAB_WIDTH_WIDE : PLAYER_TAB_WIDTH);
+      },
+      _getPlayerTabMargin: function() {
+        return 0;
+      },
+      _getPlayerHorizontalMargin: function() {
+        return 1.05; // 両端に 2.5% x 2 のマージンがある
+      },
+      _getProfileSet: function() {
+        return {
+          'WQHD':   [2560, 1440],
+          '1080p':  [1920, 1080],
+          'HD+':    [1600,  900],
+          'WXGA+':  [1400,  810],
+          'WXGA':   [1366,  768],
+          '720p':   [1280,  720],
+          'WSVGA+': [1152,  648],
+          'WSVGA':  [1024,  576],
+          'QHD':    [ 960,  540],
+          'WVGA':   [ 854,  480]
+//          'WVGA-':  [ 720,  720 / 16 * 9],
+//          'VGA-':   [ 640,  360],
+//          'VGA--':  [ 480,  480 / 16 * 9],
+//          'VGA---': [ 512,  512 / 16 * 9]
+        };
+      },
+      _getTargetSize: function(targetWidth, targetHeight) {
+         var CONTROL_HEIGHT = 46, INPUT_HEIGHT = 30;
+         var SONGRIUM_WIDTH = 898;
+
+         var plWidth  = Math.round(targetWidth * this._getPlayerHorizontalMargin());
+         var plHeight = targetHeight + CONTROL_HEIGHT + INPUT_HEIGHT;
+         var alWidth  = plWidth + this._getPlayerTabWidth();
+         return {
+           playerWidth:            plWidth,
+           playerHeight:           plHeight,
+           alignmentAreaWidth:     alWidth,
+           heatMapScale:           plWidth / 100,
+           songriumScale:          plWidth / SONGRIUM_WIDTH,
+           songriumCategoryLeft:   plWidth + 32
+         };
+      },
+      _suggestProfile: function() {
+         var iw = $(window).innerWidth(), ih = $(window).innerHeight();
+         var hh = (this._isFixedHeader() ? $("#siteHeader").outerHeight() : 0);
+         iw -= this._getPlayerTabWidth();
+         iw -= this._getPlayerTabMargin();
+         var profileSet = this._getProfileSet();
+
+         ih -= hh;
+         for (var v in profileSet) {
+           var w = profileSet[v][0], h = profileSet[v][1];
+           if (w * this._getPlayerHorizontalMargin() <= iw && h <= ih) {
+             return {w: w, h: h, name: v};
+           }
+         }
+         return null;
+      },
+      _generateCss: function() {
+        var profile = this._suggestProfile();
+
+        if (!profile) return {css: '', profile: ''};
+        var ts = this._getTargetSize(profile.w, profile.h);
+        var css = this._getCssTemplate();
+
+        for (var v in ts) {
+          css = css.split('{$' + v + '}').join(ts[v]);
+        }
+        return {css: css, profile: profile};
+      },
+      _updateStyle: function() {
+        if (!this._isNormalPlayerMode()) {
+          return;
+        }
+
+        var result = this._generateCss();
+        var css = result.css, profile = result.profile, name = profile.name;
+
+        //if (!name) { return; }
+        console.log('%cプレイヤーサイズ: ' + profile.name, 'background: lightgreen;');
+
+        if (this._lastCssName === name) {
+          return;
+        }
+        this._lastCssName = name;
+        if (this._customStyleElement) {
+          console.log('A');
+          this._customStyleElement.innerHTML = css;
+        } else {
+          console.log('B');
+          this._customStyleElement = window.Shinjuku.addStyle(css, 'customPlayerSize');
+        }
+      },
+      _toggleSize: function(v) {
+        if (typeof v === 'boolean') {
+          $('body').toggleClass('w_size_custom', v);
+        } else {
+          $('body').toggleClass('w_size_custom');
+        }
+      }
+    };
 
     window.WatchApp.mixin(window.Shinjuku, {
       initialize: function() {
@@ -255,6 +424,7 @@
         this.initializeVideoDescription();
         this.initializeSettingPanel();
         this.initializeCommentVisibility();
+        this.initializePlayerResizer();
         this.initializeOther();
 
         this.initializeCss();
@@ -1101,7 +1271,8 @@
           forceOldTypeControlPanel: true,
           commentVisible: true,
           osusumeOnly: false,
-          applyCss: true
+          applyCss: true,
+          autoResizePlayer: false
         };
         this.config = {
           get: function(key) {
@@ -1708,12 +1879,18 @@
           </div>
           <div class="panelInner">
             <div class="item" data-setting-name="autoScroll" data-menu-type="radio">
-              <h3 class="itemTitle">初期化時にプレーヤーの位置にスクロール</h3>
+              <h3 class="itemTitle">自動で動画プレーヤーの位置にスクロール</h3>
               <label><input type="radio" value="true" >する</label>
               <label><input type="radio" value="false">しない</label>
             </div>
             <div class="item" data-setting-name="dblclickAutoScroll" data-menu-type="radio">
               <h3 class="itemTitle">背景ダブルクリックでプレーヤーの位置にスクロール</h3>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+            <div class="item" data-setting-name="autoResizePlayer" data-menu-type="radio">
+              <h3 class="itemTitle">ウィンドウに合わせてプレイヤーサイズを大きくする</h3>
+              <p>※ 中画面は変わりません。 ニコニコニュースは表示できなくなります。</p>
               <label><input type="radio" value="true" >する</label>
               <label><input type="radio" value="false">しない</label>
             </div>
@@ -1804,7 +1981,7 @@
           if (e.button !== 0 || e.metaKey || e.shiftKey || e.altKey || e.ctrlKey) return true;
           if (e.target.tagName !== 'A') return;
 
-          var $target = $(e.target), href = $target.attr('href'), text = $target.text();
+          var $target = $(e.target), text = $target.text();
           if (text.match(/^mylist\/(\d+)/)) {
             e.preventDefault(); e.stopPropagation();
             window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerController.showMylist(RegExp.$1);
@@ -1866,6 +2043,12 @@
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', onFirstVideoInit);
 
       },
+      initializePlayerResizer: function() {
+        if (this.config.get('autoResizePlayer')) {
+          this._playerResizer = new window.Shinjuku.ns.NicoplayerResizer();
+          this._playerResizer.initialize();
+        }
+      },
       initializeOther: function() {
         // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
         $('.videoDetailExpand h2').addClass('videoDetailToggleButton');
@@ -1886,7 +2069,7 @@
           refreshTitle();
         });
 
-        if (this.config.get('noNews') === true) {
+        if (this.config.get('noNews') === true || this.config.get('autoResizePlayer') === true) {
           $('#content').addClass('noNews'); // ニュース消す
           // 通信を止める
           var tmi = window.WatchApp.ns.init.TextMarqueeInitializer;
