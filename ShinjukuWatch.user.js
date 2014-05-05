@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.4.0
+// @version     1.4.1
 // @grant       none
 // ==/UserScript==
 
@@ -273,6 +273,9 @@
 
            body.size_normal.w_size_custom:not(.videoExplorer):not(.full_with_browser) #inspire_category {
             left: {$songriumCategoryLeft}px !important;
+           }
+           body.w_size_custom:not(.full_with_browser):not(.videoExplorer) #playlist {
+             margin: -10px auto 0; width: {$alignmentAreaWidth}px;
            }
 
            */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
