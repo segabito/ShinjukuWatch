@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.4.3
+// @version     1.4.4
 // @grant       none
 // ==/UserScript==
 
@@ -687,6 +687,16 @@
             border: 0px;
           }
 
+          #videoExplorer .descriptionShort {
+            line-height: 1.5;
+            margin: 0 0 4px;
+            word-break: break-all;
+            clear: both;
+            color: #666;
+            font-size: 93%;
+          }
+
+
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
         var __css__ = (function() {/*
@@ -1117,38 +1127,44 @@
             font-weight: bolder;
           }
 
+          .squareThumbnail .videoExplorerBody .contentItemList.column1 .video .column1 .title, .videoExplorerBody .videoExplorerContent .suggestVideo .video .column1 .title {
+            white-space: inherit;
+          }
 
           {* 動画選択画面のサムネを4:3にする *}
           body.videoExplorer #videoExplorer.squareThumbnail .column4 .item {
             text-align: center;
           }
 
+          body.videoExplorer #videoExplorer.squareThumbnail .videoInformationOuter {
+            padding-left: 10px;
+          }
+
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer,
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer .link {
-            width: 130px; height: 100px;
-            background-color: transparent !important;
+            width: 160px; height: 100px;
           }
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer {
-            padding: 0 15px;
+            margin: 0 0px;
           }
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer .thumbnail {
-            max-width: 130px; height: auto; top: 0; left: 0
+            max-width: 160px; height: auto; top: 0; left: 0
           }
           body.videoExplorer #videoExplorer.squareThumbnail .item .thumbnailContainer img.playingIcon {
             top: 50%; left: 50%;
           }
 
           body.videoExplorer #videoExplorer.squareThumbnail .uadFrame {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
             background-size: 100% 100%;
           }
 
           .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
           }
 
           .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer .videoTitleContainer {
-            width: 130px;
+            width: 160px;
             text-align: center;
           }
           #videoExplorer.squareThumbnail .uadTagRelated {
@@ -1159,14 +1175,14 @@
             width: 130px; height: auto; top: 0; left: 0;
           }
           .squareThumbnail .uadTagRelated .default .itemList .item .imageContainer .itemImageWrapper {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
           }
           .uadTagRelated .emptyItem .emptyMessageContainer {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
           }
           .videoExplorerBody .videoExplorerContent .contentItemList .item .thumbnailContainer .nextPlayButton,
           .videoExplorerBody .videoExplorerContent .suggestVideo    .item .thumbnailContainer .nextPlayButton {
-            right: 17px;
+            right: 2px;
             transition: transform 0.1s ease; -webkit-transition: -webkit-transform 0.1s ease;
           }
           .nextPlayButton {
@@ -1235,15 +1251,15 @@
             background-position: center center;
           }
           #videoExplorer .item .thumbnailContainer {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
           }
 
           #videoExplorer .uadFrame {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
             background-size: 100% 100%;
           }
           #videoExplorer .uadTagRelated .default .itemList .item .imageContainer {
-            width: 130px; height: 100px;
+            width: 160px; height: 100px;
           }
 
 
@@ -1363,7 +1379,10 @@
         // 動画表示のテンプレート拡張
         var $template = $('<div/>').html(window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerView._contentListView._$view.find('.videoItemTemplate').html());
         $template.find('.column1')
-           .find('.descriptionShort').after($('<p class="itemMylistComment mylistComment"/>'))
+            .find('.messageContainer').remove().end()
+            .find('.lastResBody')
+              .before($('<p class="descriptionShort"/><p class="itemMylistComment mylistComment"/>')).end()
+//           .find('.descriptionShort').after($('<p class="itemMylistComment mylistComment"/>'))
         window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerView._contentListView._$view.find('.videoItemTemplate').html($template.html());
         $template = null;
 
@@ -1377,6 +1396,13 @@
           // 動画情報表示をゴリゴリいじる場所
           if (item._mylistComment) { // マイリストコメント
             $item.find('.itemMylistComment').css({display: 'block'});
+          }
+
+          var lastResBody = item.getLastResBody();
+          if (lastResBody.length > 0) {
+            this._$lastResBody.css('cssText', 'display: block !important').text(lastResBody);
+          } else {
+            this._$lastResBody.remove();
           }
 
           this._$item.find('.thumbnailContainer')
