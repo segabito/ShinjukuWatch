@@ -509,6 +509,21 @@
             font-weight: bolder;
             margin-right: 8px;
           }
+
+          .osusumeContainer li .duration  {
+            display: none;
+            font-weight: normal;
+            font-size: 70%;
+          }
+          .osusumeContainer .hasDuration .duration  {
+            display: inline;
+          }
+          .osusumeContainer li .duration:before {
+            content: '(';
+          }
+          .osusumeContainer li .duration:after {
+            content: ')';
+          }
           .osusumeContainer li:after {
             content: ''; clear: both;
           }
@@ -1451,7 +1466,7 @@
           '<li class="%class%">',
             '<a href="%protocol%//%host%/watch/%videoId%" class="thumbnail"><img src="%thumbnail%"></a>',
             '%posted%',
-            '<a href="%protocol%//%host%/watch/%videoId%" class="title">%title%</a>',
+            '<a href="%protocol%//%host%/watch/%videoId%" class="title">%title%</a> <span class="duration">%duration%</span>',
             '<div class="nextPlayButton" title="次に再生" onclick="WatchItLater.WatchController.insertVideoToPlaylist(\'%videoId%\')">次に再生</div>',
             '<p>再: <span class="count">%view%</span>',
             'コメ: <span class="count">%num_res%</span>',
@@ -1486,6 +1501,17 @@
           },
           addPlaylistItem: function(item) {
             if (!item._hasData) return;
+            var _formatLength = function(length) {
+              var ret = null;
+              if (typeof length !== 'number') {
+                return ret;
+              }
+              ret =
+                parseInt(length / 60, 10) + ':' +
+                (((length % 60) + 100).toString().substr(1));
+
+              return ret;
+            };
             this.add({
               id:             item.id,
               first_retrieve: item.firstRetrieve,
@@ -1493,7 +1519,8 @@
               num_res:        item.numRes,
               mylist_counter: item.mylistCounter,
               view_counter:   item.viewCounter,
-              title:          item.title
+              title:          item.title,
+              length:         typeof item.lengthSeconds === 'number' ? _formatLength(item.lengthSeconds) : null
             });
           },
           clear: function() {
@@ -1517,12 +1544,16 @@
                 .split('%num_res%')  .join(item.num_res)
                 .split('%mylist%')   .join(item.mylist_counter)
                 .split('%title%')    .join(item.title)
+                .split('%duration%') .join(item.length)
                 .split('%posted%')   .join(
                     typeof item.first_retrieve === 'string' ?
                       '<span class="posted">' + item.first_retrieve.replace(/(\d+)-/g, '$1/') + ' 投稿</span>' :
                       ''
                 )
-                .split('%class%')    .join(item.baseId === watchId ? 'currentVideoRelated' : 'otherVideoRelated');
+                .split('%class%')    .join([
+                    (item.baseId === watchId ? 'currentVideoRelated' : 'otherVideoRelated'),
+                    (item.length ? 'hasDuration' : '')
+                  ].join(' '));
               view.push(itemView);
             }
             view.push('</ul>');
