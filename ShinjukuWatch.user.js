@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.4.5
+// @version     1.4.7
 // @grant       none
 // ==/UserScript==
 
@@ -672,7 +672,6 @@
           .column1 .itemMylistComment:after {
             content: '';
           }
-
           .w_noHover {
             pointer-events: none !important;
           }
@@ -1256,6 +1255,11 @@
             border-radius: 0 4px 4px 0;
           }
 
+          .column1 .itemMylistComment pre {
+            font-family: inherit;
+            display: inline;
+            white-space: pre-wrap;
+          }
 
           .item.thumbnailLoadSuccess .noImage, #videoExplorer.squareThumbnail .item .thumbnail {
             display: none !important;
@@ -1397,7 +1401,6 @@
             .find('.messageContainer').remove().end()
             .find('.lastResBody')
               .before($('<p class="descriptionShort"/><p class="itemMylistComment mylistComment"/>')).end()
-//           .find('.descriptionShort').after($('<p class="itemMylistComment mylistComment"/>'))
         window.WatchApp.ns.init.VideoExplorerInitializer.videoExplorerView._contentListView._$view.find('.videoItemTemplate').html($template.html());
         $template = null;
 
