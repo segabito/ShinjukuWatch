@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.4.7
+// @version     1.5.0
 // @grant       none
 // ==/UserScript==
+
+// 1.5.0
+// - オススメ欄にとりあえずマイリストボタンを追加
 
 // 1.4.0
 // - ウィンドウサイズに合わせてプレイヤーを大きくする機能を追加 (中画面は変わらない)
@@ -463,11 +466,15 @@
             position: absolute;
                       top: 8px; right: 8px; bottom: 8px; left: 8px; padding: 4px;
             border: 1px solid #000;
-            overflow-y: scroll;
-            overflow-x: hidden;
+            overflow: hidden;
           }
           .panel_ads_shown .osusumeContainer {
             bottom: 0px;
+          }
+          .osusumeContainer .osusumeContainerInner  {
+            overflow-x: hidden;
+            overflow-y: scroll;
+            height: 100%;
           }
           .osusumeContainer li  {
             position: relative;
@@ -551,6 +558,60 @@
           }
           .osusumeContainer.withWatchItLater .nextPlayButton:active {
             -webkit-transform: scale(1.2); transform: scale(1.2);
+          }
+
+          .osusumeContainer .deflistButton {
+            position: absolute;
+            display: none;
+            width: 30px;
+            left: 4px;
+            top: 54px;
+            z-index: 100;
+            cursor: pointer;
+            overflow: hidden;
+            color: #333;
+            text-align: center;
+            -webkit-transform: scale(1.0); transform: scale(1.0);
+            border: 1px outset;
+            background-color: #ccc;
+          }
+          .osusumeContainer li:hover .deflistButton {
+            display: inline-block;
+          }
+          .osusumeContainer .deflistButton:active {
+            border: 1px inset;
+          }
+
+          .osusumeContainer.waiting-api   ul *,
+          .osusumeContainer.waiting-timer ul * {
+            opacity: 0.5;
+            cursor: wait;
+          }
+          .osusumeContainer .message {
+            position: absolute;
+            bottom: -30%;
+            left: 10%;
+            width: 80%;
+            z-index: 1000;
+            color: white;
+            border: 1px solid #000;
+            font-weight: bolder;
+            font-size: 12pt;
+            text-align: center;
+            word-break: break-all;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out, bottom 0.4s ease-in-out, box-shadow 0.4s ease-in-out, background 0.4s ease-in-out;
+          }
+          .osusumeContainer.showMessage .message {
+            opacity: 0.8;
+            bottom: 30%;
+            box-shadow: 4px 4px 4px #000;
+          }
+          .osusumeContainer.deflistSuccess .message {
+            background: #080;
+          }
+          .osusumeContainer.deflistFail    .message {
+            background: #800;
           }
 
 
@@ -1466,16 +1527,22 @@
         // でもYouTubeみたいに中身が全部入れ替わる方式だと「他に見たい奴もあったのに」を回収できなくて嫌
         // なので、n件までたまっていく方式にする
         var template = [
-          '<li class="%class%">',
+          '<li class="%class%" data-video-id="%videoId%">',
             '<a href="%protocol%//%host%/watch/%videoId%" class="thumbnail"><img src="%thumbnail%"></a>',
             '%posted%',
             '<a href="%protocol%//%host%/watch/%videoId%" class="title">%title%</a> <span class="duration">%duration%</span>',
+            '<div class="deflistButton" title="とりあえずマイリスト">my</div>',
             '<div class="nextPlayButton" title="次に再生" onclick="WatchItLater.WatchController.insertVideoToPlaylist(\'%videoId%\')">次に再生</div>',
             '<p>再: <span class="count">%view%</span>',
             'コメ: <span class="count">%num_res%</span>',
             'マイ: <span class="count">%mylist%</span></p>',
           '</li>',
         ''].join('');
+        var messageTemplate = [
+          '<div class="message">',
+          '<span class="messageBody"></span>',
+          '</div>',
+          ''].join('');
         var relatedVideo   = new window.Shinjuku.ns.loader.RelatedVideo({});
         var watchInfoModel = this._watchInfoModel;
         var MAX_ITEMS = 100;
@@ -1486,16 +1553,72 @@
 
         var osusumeController = this.osusumeController = {
           items: [],
-          $container: $('<div class="osusumeContainer" />'),
+          $container: $('<div class="osusumeContainer"><div class="osusumeContainerInner"></div></div>'),
+          $message: $(messageTemplate),
           initialize: function() {
             $('#nicommentPanelContainer, #osusumePanelContainer').prepend(this.$container);
-            this.$container.on('dblclick', function() {
-              $(this).animate({scrollTop: 0}, 400);
-            }).on('scroll', function() {
-              if (window.WatchItLater && window.WatchItLater.popup) {
-                window.WatchItLater.popup.hidePopup();
-              }
-            });
+            var $message = this.$message;
+            var hideMessage = window._.debounce(function() {
+              $container.removeClass('showMessage deflistSuccess deflistFail');
+            }, 2000);
+            var showMessage = function(msg) {
+              $message.text(msg);
+              $container.addClass('showMessage');
+              hideMessage();
+            };
+            var $container = this.$container
+              .append(this.$message)
+              .on('click', '.thumbnail img', function(e) {
+                if (!window.WatchItLater) { return; }
+                if (!e.target.src) { return; }
+                e.preventDefault();
+                e.stopPropagation();
+                window.WatchItLater.WatchController.showLargeThumbnail(e.target.src);
+              })
+              .on('click', '.deflistButton', function(e) {
+                var $item = $(e.target).closest('li');
+                var videoId = $item.attr('data-video-id');
+                if ($container.hasClass('waiting-api') ||
+                    $container.hasClass('waiting-timer')) {
+                  return;
+                }
+                $container
+                  .removeClass('showMessage deflistFail deflistSuccess')
+                  .addClass('waiting-api waiting-timer');
+
+                hideMessage();
+                window.setTimeout(function() {
+                  $container.removeClass('waiting-timer');
+                }, 1000);
+                var timeoutTimer = window.setTimeout(function() {
+                  $container
+                    .removeClass('waiting-api')
+                    .addClass('deflistFail');
+                  showMessage('通信エラーです');
+                }, 10000);
+                window.WatchApp.ns.init.DeflistInitializer.deflistEditAPILoader.add(videoId, {
+                  callback: function(result) {
+                    $container.removeClass('waiting-api');
+                    window.clearTimeout(timeoutTimer);
+
+                    var isSuccess = result.status === 'ok';
+                    var msg = isSuccess ?
+                      'とりあえずマイリストに登録しました' :
+                      $('.translations .deflistAddMessages .' + result.code).text();
+
+                    $container
+                      .addClass(isSuccess ? 'deflistSuccess' : 'deflistFail');
+
+                    showMessage(msg);
+                }});
+              })
+              .on('dblclick', function() {
+                $(this).animate({scrollTop: 0}, 400);
+              }).on('scroll', function() {
+                if (window.WatchItLater && window.WatchItLater.popup) {
+                  window.WatchItLater.popup.hidePopup();
+                }
+              });
           },
           add: function(item) {
             item.baseId = watchInfoModel.v; // どの動画の関連だったか
@@ -1562,16 +1685,11 @@
             view.push('</ul>');
 
             this.$container
-              .html(view.join(''))
-              .scrollTop(0)
+              .append(this.$message)
               .toggleClass('withWatchItLater', typeof window.WatchItLater === 'object')
-              .on('click', '.thumbnail img', function(e) {
-                if (!window.WatchItLater) { return; }
-                if (!e.target.src) { return; }
-                e.preventDefault();
-                e.stopPropagation();
-                WatchItLater.WatchController.showLargeThumbnail(e.target.src);
-              })
+              .find('.osusumeContainerInner')
+              .scrollTop(0)
+              .html(view.join(''))
               .find('.otherVideoRelated:first')
               .addClass('first')
               .before($('<li class="previousOsusume">前の動画のオススメ</li>'));
