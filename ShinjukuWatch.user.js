@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.5.0
+// @version     1.5.1
 // @grant       none
 // ==/UserScript==
 
@@ -696,10 +696,6 @@
           #content.noNews #textMarquee {
             display: none !important;
           }
-          {* ブラウザ画面でプレイリスト・タグ出すモードでニュースはいらない *}
-          body.full_with_browser:not(.full_and_mini) .noNews #playerAlignmentArea{
-            margin-bottom: -37px;
-          }
           {* ニコるを消す *}
           .noNicoru .nicoru-button{
             left: -9999; display: none !important;
@@ -1100,10 +1096,6 @@
           .Shinjuku .quickMylistFrame:hover {
           }
 
-          {* プレイリスト・タグ入り全画面の時に消すの忘れてた。 けどやっぱり便利そうなので残す事にした。 *}
-          body.full_with_browser.Shinjuku:not(.full_and_mini) .quickMylistFrame{
-            top: 0; right: 0; padding: 4px 4px;
-          }
 
           #videoInfo, #videoReview {
             display: none !important;
