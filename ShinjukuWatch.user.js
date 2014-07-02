@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.5.1
+// @version     1.5.2
 // @grant       none
 // ==/UserScript==
 
@@ -958,26 +958,43 @@
           body #playerContainerWrapper { background: none; }
 
           {* 下半身いっぱいを市場表示 *}
-                           #outline .main                   { width: 1008px; }
-                           #outline #ichibaMain             { width: 1008px; margin: auto; text-align: center;}
-                           #outline .outer                  { width: 1008px; }
-          body.size_normal #outline .main                   { width: 1234px; }
-          body.size_normal #outline #ichibaMain             { width: 1234px; margin: auto;}
-          body.size_normal #outline .outer                  { width: 1234px; }
-          body #ichibaMain dl {
-            height: 380px; overflow: hidden;
-            display: inline-block; float: none;
-            text-align: left;
-            vertical-align: top;
+          @media screen and (min-width: 1008px) {
+                             #outline .main                   { width: 1008px; }
+                             #outline #ichibaMain             { width: 1008px; margin: auto; text-align: center;}
+                             #outline .outer                  { width: 1008px; }
+            body.size_normal #outline .main                   { width: 1234px; }
+            body.size_normal #outline #ichibaMain             { width: 1234px; margin: auto;}
+            body.size_normal #outline .outer                  { width: 1234px; }
+            body #ichibaMain dl {
+              height: 380px; overflow: hidden;
+              display: inline-block; float: none;
+              text-align: left;
+              vertical-align: top;
+            }
+            body.size_medium #ichibaMain dl {
+              margin:0  9px 30px;
+            }
+            body.size_normal #ichibaMain dl {
+              margin:0 10px 30px;
+            }
           }
+          @media screen and (max-width: 1007px) {
+                             #outline .main                   { width: 100vw; }
+                             #outline #ichibaMain             { width: 100vw; margin: auto; text-align: center;}
+                             #outline .outer                  { width: 100vw; }
+            body.size_normal #outline .main                   { width: 100vw; }
+            body.size_normal #outline #ichibaMain             { width: 100vw; margin: auto;}
+            body.size_normal #outline .outer                  { width: 100vw; }
+            body #ichibaMain dl {
+              margin:0  9px 30px;
+              float: inherit;
+              display: inline-block;
+              vertical-align: top;
+            }
+          }
+
           #ichibaMain #ichibaMainFooter .commandArea2 {
             display: none; {* 変な位置に表示されてみっともないので *}
-          }
-          body.size_medium #ichibaMain dl {
-            margin:0  9px 30px;
-          }
-          body.size_normal #ichibaMain dl {
-            margin:0 10px 30px;
           }
           body #ichibaMain dt {
             height: 60px;
@@ -1274,24 +1291,31 @@
              transform: scale(1.5); -webkit-transform: scale(1.5);
           }
 
+          body.size_small.no_setting_panel.videoExplorer #playlist {
+            box-shadow: none;
+          }
+          body.size_small.no_setting_panel.videoExplorer #playerContainerWrapper {
+            box-shadow: none;
+          }
 
           {* 動画選択画面のセンタリング *}
-          body.videoExplorer #bottomContentTabContainer {
-            width: 1008px;
-            margin: auto;
-          }
-          body.size_small.no_setting_panel.videoExplorer #playlist {
-            width: 708px;
-            margin: auto;
-            box-shadow: none;
-          }
-          body.size_small.no_setting_panel.videoExplorer.content-fix #playlist{
-            min-width: 708px;
-          }
-          body.size_small.no_setting_panel.videoExplorer #playerContainerWrapper{
-            right: calc(50% + 204px);
-            left: auto;
-            box-shadow: none;
+          @media screen and (min-width: 1008px) {
+            body.videoExplorer #bottomContentTabContainer {
+              width: 1008px;
+              margin: auto;
+            }
+            body.size_small.no_setting_panel.videoExplorer #playlist {
+              width: 708px;
+              margin: auto;
+            }
+            body.size_small.no_setting_panel.videoExplorer.content-fix #playlist{
+              min-width: 708px;
+            }
+
+            body.size_small.no_setting_panel.videoExplorer #playerContainerWrapper {
+              right: calc(50% + 204px);
+              left: auto;
+            }
           }
           .videoExplorerContent {
             padding: 20px 4px 20px 8px;
@@ -1339,6 +1363,96 @@
           body:not(.Shinjuku) #videoHeader .videoShareLinks .socialLinkFacebook{
             position: fixed; top: -9999px; overflow: hidden;
           }
+
+
+          {* 狭いウィンドウへの対応 *}
+          {* プレイヤー+コメントパネルより狭い時*}
+          @media screen and (max-width: 1023px) {
+            body {
+              min-width: inherit;
+            }
+            body:not(.videoExplorer):not(.full_with_browser) #playerAlignmentArea .playerBottomButton.toggleSetting {
+              right: auto;
+              left: 184px;
+            }
+            body:not(.full_with_browser):not(.videoExplorer) #playlist {
+              width: 100vw;
+            }
+
+            body.m_windows:not(.full_with_browser):not(.videoExplorer) #playlist {
+              width: calc(100vw - 16px);
+            }
+
+            body #videoHeader #videoMenuWrapper {
+              left: calc(100vw - 326px);
+              right: auto;
+            }
+          }
+          {* 中画面よりも狭い時 *}
+          @media screen and (max-width: 672px) {
+            #topVideoInfo .ch_prof,
+            #topVideoInfo .userProfile {
+              float: inherit;
+              width: 100vw;
+              margin: 0 0 4px;
+              padding: 0 4px 4px;
+              box-sizing: border-box;
+            }
+            body #videoHeaderDetail {
+              width: 100vw;
+            }
+            #topVideoInfo .videoDescription {
+              width: 100vw;
+              box-sizing: border-box;
+            }
+            body:not(.full_with_browser).size_medium #videoTagContainer {
+              width: 100vw;
+              min-width: inherit;
+            }
+
+            .size_medium #playerAlignmentArea.size_medium {
+              width: 672px;
+            }
+            .size_medium #playerTabWrapper {
+              right: -336px;
+            }
+            #content #textMarquee{
+              width: 100vw !important;
+            }
+            .size_medium #playerAlignmentArea.size_medium #external_nicoplayer,
+            .size_medium #playerAlignmentArea.size_medium #playerNicoplayer {
+              width: 100vw;
+            }
+
+            #videoHeader .videoCounter {
+              position: static;
+            }
+            .videoMenuToggle {
+              right: auto;
+              left: calc(100vw - 60px);
+            }
+            .Shinjuku .quickMylistFrame {
+              right: auto;
+              left: calc(100vw - 205px);
+            }
+            .m_windows.Shinjuku .videoMenuToggle {
+              left: calc(100vw - 76px);
+            }
+            .m_windows.Shinjuku .quickMylistFrame {
+              left: calc(100vw - 221px);
+            }
+            {* スクロールバー幅だけ引く もっとスマートな方法があるかも *}
+            .m_windows #topVideoInfo .ch_prof,
+            .m_windows #topVideoInfo .userProfile,
+            body.m_windows #videoHeaderDetail,
+            .m_windows #topVideoInfo .videoDescription,
+            body.m_windows:not(.full_with_browser).size_medium #videoTagContainer,
+            .m_windows.size_medium #playerAlignmentArea.size_medium #external_nicoplayer,
+            .m_windows.size_medium #playerAlignmentArea.size_medium #playerNicoplayer {
+              width: calc(100vw - 16px);
+            }
+          }
+
 
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
@@ -2256,7 +2370,9 @@
 
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
-          $('body').addClass('Shinjuku');
+          $('body')
+            .addClass('Shinjuku')
+            .toggleClass('m_windows', navigator.userAgent.toLowerCase().indexOf('windows') >= 0);
 
           // ?ref=がついてるせいで未読既読のリンクの色が変わらなくなる問題の対策
           // 自分のマイリストから飛んできた場合の ?group_id=xxxも消すべきか？は迷うところ
