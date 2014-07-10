@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.5.2
+// @version     1.5.3
 // @grant       none
 // ==/UserScript==
 
@@ -1382,17 +1382,90 @@
             body.m_windows:not(.full_with_browser):not(.videoExplorer) #playlist {
               width: calc(100vw - 16px);
             }
-
+            body #videoHeader {
+              width: 100vw !important;
+            }
+            body.m_windows #videoHeader {
+              width: calc(100vw - 16px) !important;
+            }
+            body #videoHeaderDetail {
+              width: calc(100vw - 336px);
+            }
+            #topVideoInfo .ch_prof, #topVideoInfo .userProfile {
+              position: absolute;
+              left: 672px;
+            }
+            .userProfile .profile {
+              width: auto !important;
+            }
+            #content .videoInformation .videoStats{
+              display: none;
+            }
+            #topVideoInfo .parentVideoInfo {
+              margin-left: 8px;
+            }
+            #topVideoInfo .hiddenInfoTabHeader {
+              clear: none;
+            }
             body #videoHeader #videoMenuWrapper {
               left: calc(100vw - 326px);
               right: auto;
             }
+
+            body:not(.full_with_browser).size_medium #videoTagContainer {
+              width: calc(100vw - 336px);
+              min-width: inherit;
+            }
+            body.m_windows #videoHeader #videoMenuWrapper {
+              left: calc(100vw - 326px - 16px);
+            }
+
+            body:not(.full_with_browser).size_medium #videoTagContainer {
+              width: calc(100vw - 336px - 16px);
+            }
+
           }
+
+
           {* 中画面よりも狭い時 *}
           @media screen and (max-width: 672px) {
+            #siteHeader {
+            }
+            #siteHeader #siteHeaderInner {
+              width: 100vw;
+              max-width: 100vw !important;
+              min-width: 100vw !important;
+            }
+
+            #siteHeaderInner .siteHeaderMenuList>li:nth-child(3) { {* 動画を投稿リンク *}
+              display: none;
+            }
+
+            #siteHeader #siteHeaderInner .siteHeaderGlovalNavigation {
+              display: none !important;
+            }
+            #siteHeaderUserNickNameContainer {
+              display: none !important;
+            }
+            #siteHeader #siteHeaderInner .siteHeaderMenuList {
+            }
+            #siteHeaderNotification a.siteHeaderUpgrade  {
+              display: none !important;
+            }
+            #videoHeaderDetail h2 {
+            }
+            #videoHeaderDetail .videoDetailExpand {
+              display: inline-block;
+            }
+
+            #videoHeaderMenu .searchContainer {
+              right: -336px;
+            }
             #topVideoInfo .ch_prof,
             #topVideoInfo .userProfile {
+              position: relative;
               float: inherit;
+              left: 0;
               width: 100vw;
               margin: 0 0 4px;
               padding: 0 4px 4px;
@@ -1404,14 +1477,25 @@
             #topVideoInfo .videoDescription {
               width: 100vw;
               box-sizing: border-box;
+              max-height: 150px;
+              overflow-y: scroll;
+              border: 1px inset;
+            }
+            #content .videoInformation{
+              display: none;
+            }
+            #topVideoInfo .videoMainInfoContainer .hiddenInfo {
+              box-sizing: border-box;
+              padding: 4px;
+              margin-left: 0;
             }
             body:not(.full_with_browser).size_medium #videoTagContainer {
               width: 100vw;
               min-width: inherit;
             }
 
-            .size_medium #playerAlignmentArea.size_medium {
-              width: 672px;
+            .size_medium #playerAlignmentArea {
+              width: 100vw;
             }
             .size_medium #playerTabWrapper {
               right: -336px;
@@ -1450,6 +1534,10 @@
             .m_windows.size_medium #playerAlignmentArea.size_medium #external_nicoplayer,
             .m_windows.size_medium #playerAlignmentArea.size_medium #playerNicoplayer {
               width: calc(100vw - 16px);
+            }
+
+            #shinjukuSettingPanel {
+              width: 90vw !important;
             }
           }
 
@@ -1501,6 +1589,8 @@
 
         // タグ領域のピン留め
         window.WatchApp.ns.init.TagInitializer.tagViewController.tagViewPinStatus.changeStatus(true);
+
+        $('#videoTagContainer').off();
 
        //  var $a = $('.toggleTagEditInner a').detach();
        //  $('.toggleTagEditInner').empty().append($a);
@@ -1957,7 +2047,10 @@
         $('html').on('dblclick', $.proxy(function(e) {
           if (!this.config.get('dblclickAutoScroll')) return;
           var $target = $(e.target);
-          if ($target.hasClass('videoDescription')) return;
+          if ($target.hasClass('videoDescription')) {
+            $target.animate({scrollTop: 0}, 400);
+            return;
+          }
           scrollToPlayer();
         }, this));
 
@@ -2372,7 +2465,7 @@
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
           $('body')
             .addClass('Shinjuku')
-            .toggleClass('m_windows', navigator.userAgent.toLowerCase().indexOf('windows') >= 0);
+            .toggleClass('m_windows', navigator.platform.toLowerCase().indexOf('win') >= 0);
 
           // ?ref=がついてるせいで未読既読のリンクの色が変わらなくなる問題の対策
           // 自分のマイリストから飛んできた場合の ?group_id=xxxも消すべきか？は迷うところ
