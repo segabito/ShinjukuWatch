@@ -4,9 +4,12 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.5.3
+// @version     1.6.0
 // @grant       none
 // ==/UserScript==
+
+// 1.6.0
+// - 本家の初期化処理の仕様が変わったので対応
 
 // 1.5.0
 // - オススメ欄にとりあえずマイリストボタンを追加
@@ -402,7 +405,7 @@
       initialize: function() {
         window.console.time('init Shinjuku');
         if (window.WatchApp && window.WatchJsApi) { // WatchAppだけだとコメント編集画面にも来てしまうため
-          this.initializeUserConfig();
+          //this.initializeUserConfig();
           this._watchInfoModel      = window.WatchApp.ns.init.CommonModelInitializer.watchInfoModel;
           this._playerAreaConnector = window.WatchApp.ns.init.PlayerInitializer.playerAreaConnector;
           this._nicoPlayerConnector = window.WatchApp.ns.init.PlayerInitializer.nicoPlayerConnector;
@@ -430,17 +433,17 @@
         this.initializeVideoDescription();
         this.initializeSettingPanel();
         this.initializeCommentVisibility();
-        this.initializePlayerResizer();
+        //this.initializePlayerResizer();
         this.initializeOther();
 
-        this.initializeCss();
+        //this.initializeCss();
       },
       initializeOsusumeOnly: function() {
         this._isOsusumeOnly = true;
         this.initializePlayerTab();
         this.initializeOsusume();
         this.initializeSettingPanel();
-        this.initializeCss();
+        //this.initializeCss();
 //        this.osusumeController.refresh();
 //        $('body').addClass('Shinjuku');
       },
@@ -2479,8 +2482,18 @@
 
     });
 
-    if (window.PlayerApp) {
-      (function() {
+    if (window.PlayerApp && window.WatchJsApi) {
+      ($.proxy(function() {
+        this.initializeUserConfig();
+        this.initializeCss();
+        if (this.config.get('osusumeOnly') || window.WatchItLater) {
+        } else {
+          if (this.config.get('noNews') === true || this.config.get('autoResizePlayer') === true) {
+            $('#content').addClass('noNews'); // ニュース消す
+          }
+          this.initializePlayerResizer();
+        }
+
         var watchInfoModel = WatchApp.ns.model.WatchInfoModel.getInstance();
         if (watchInfoModel.initialized) {
           window.Shinjuku.initialize();
@@ -2494,7 +2507,7 @@
           };
           watchInfoModel.addEventListener('reset', onReset);
         }
-      })();
+      }, window.Shinjuku))();
     }
 
 
