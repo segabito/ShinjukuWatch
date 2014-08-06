@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.6.0
+// @version     1.6.1
 // @grant       none
 // ==/UserScript==
 
@@ -1567,6 +1567,7 @@
           forceOldTypeControlPanel: true,
           commentVisible: true,
           osusumeOnly: false,
+          disablePrevNextButton: false,
           applyCss: true,
           autoResizePlayer: false
         };
@@ -2297,6 +2298,12 @@
               <label><input type="radio" value="true" >消す</label>
               <label><input type="radio" value="false">消さない</label>
             </div>
+            <div class="item" data-setting-name="disablePrevNextButton" data-menu-type="radio">
+              <h3 class="itemTitle">前の動画/次の動画ボタンの無効化</h3>
+              <label><input type="radio" value="true" >する</label>
+              <label><input type="radio" value="false">しない</label>
+            </div>
+
 
 
             <div class="expert">
@@ -2462,6 +2469,12 @@
         }
         if (this.config.get('hideCommentPanelSocialButtons') === true) {
           $('#playerTabContainer').addClass('w_noSocial');
+        }
+
+        // 次に再生ボタンの無効化
+        if (this.config.get('disablePrevNextButton') === true) {
+          this._nicoPlayerConnector.playNextVideo =
+          this._nicoPlayerConnector.playPreviousVideo = window._.noop;
         }
 
 
