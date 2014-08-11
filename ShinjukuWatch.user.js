@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.6.1
+// @version     1.6.2
 // @grant       none
 // ==/UserScript==
 
@@ -1569,7 +1569,8 @@
           osusumeOnly: false,
           disablePrevNextButton: false,
           applyCss: true,
-          autoResizePlayer: false
+          autoResizePlayer: false,
+          initializeImmediately: false
         };
         this.config = {
           get: function(key) {
@@ -2333,9 +2334,15 @@
               <label><input type="radio" value="true" > する</label>
               <label><input type="radio" value="false"> しない</label>
             </div>
-             <div class="item" data-setting-name="applyCss" data-menu-type="radio">
+            <div class="item" data-setting-name="applyCss" data-menu-type="radio">
               <h3 class="itemTitle">ShinjukuWatch標準のCSSを使用する</h3>
               <small>他のuserstyleを使用する場合は「しない」を選択してください</small><br>
+              <label><input type="radio" value="true" > する</label>
+              <label><input type="radio" value="false"> しない</label>
+            </div>
+            <div class="item" data-setting-name="initializeImmediately" data-menu-type="radio">
+              <h3 class="itemTitle">動画のロードを待たずに初期化する</h3>
+              <small>体感ではこちらが早く感じる場合も？(※不具合があるかも)</small><br>
               <label><input type="radio" value="true" > する</label>
               <label><input type="radio" value="false"> しない</label>
             </div>
@@ -2479,10 +2486,6 @@
 
 
         this._playerAreaConnector.addEventListener('onFirstVideoInitialized', function() {
-          $('body')
-            .addClass('Shinjuku')
-            .toggleClass('m_windows', navigator.platform.toLowerCase().indexOf('win') >= 0);
-
           // ?ref=がついてるせいで未読既読のリンクの色が変わらなくなる問題の対策
           // 自分のマイリストから飛んできた場合の ?group_id=xxxも消すべきか？は迷うところ
           // これとは別にリンク側の?ref=も除去する必要があるが、単体のスクリプトが既に存在するので省略
@@ -2499,6 +2502,10 @@
       ($.proxy(function() {
         this.initializeUserConfig();
         this.initializeCss();
+          $('body')
+            .addClass('Shinjuku')
+            .toggleClass('m_windows', navigator.platform.toLowerCase().indexOf('win') >= 0);
+
         if (this.config.get('osusumeOnly') || window.WatchItLater) {
         } else {
           if (this.config.get('noNews') === true || this.config.get('autoResizePlayer') === true) {
@@ -2519,6 +2526,17 @@
             }, 0);
           };
           watchInfoModel.addEventListener('reset', onReset);
+          if (this.config.get('osusumeOnly') === false &&
+              this.config.get('initializeImmediately') === true) {
+            console.log('%cinitialize Immediately', 'background: lightgreen;');
+            WatchApp.ns.EmbeddedWatchData.run_ = WatchApp.ns.EmbeddedWatchData.run;
+            WatchApp.ns.EmbeddedWatchData.run = function() {};
+            window.setTimeout(function() {
+              console.time('initialize Immediately');
+              WatchApp.ns.EmbeddedWatchData.run_(JSON.parse($('#configDataContainer').html()));
+              console.timeEnd('initialize Immediately');
+            }, 0);
+          }
         }
       }, window.Shinjuku))();
     }
