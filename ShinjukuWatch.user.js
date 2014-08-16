@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.6.2
+// @version     1.6.3
 // @grant       none
 // ==/UserScript==
 
@@ -770,6 +770,11 @@
             font-size: 93%;
           }
 
+          #nicoSpotAdAds >*:nth-child(2) {
+            display: none !imortant;
+            position: fixed;
+            top: -999px;
+          }
 
         */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
@@ -2530,7 +2535,9 @@
               this.config.get('initializeImmediately') === true) {
             console.log('%cinitialize Immediately', 'background: lightgreen;');
             WatchApp.ns.EmbeddedWatchData.run_ = WatchApp.ns.EmbeddedWatchData.run;
-            WatchApp.ns.EmbeddedWatchData.run = function() {};
+            WatchApp.ns.EmbeddedWatchData.run = function() {
+              $('#nicoSpotAdAds >*:nth-child(2)').remove();
+            };
             window.setTimeout(function() {
               console.time('initialize Immediately');
               WatchApp.ns.EmbeddedWatchData.run_(JSON.parse($('#configDataContainer').html()));
