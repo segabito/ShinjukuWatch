@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.6.3
+// @version     1.6.4
 // @grant       none
 // ==/UserScript==
 
@@ -782,6 +782,10 @@
           #videoHeaderDetail h2 {
             letter-spacing: -1px; {* たまに最後の1文字だけ改行されるのを防ぐ *}
           }
+          .size_normal #videoHeaderDetail h2 {
+            max-width: 898px;
+          }
+
           {*body.Shinjuku #videoHeaderDetail {
             width: calc(100% - 326px);
           }*}
