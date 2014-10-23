@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.7.1
+// @version     1.7.2
 // @grant       none
 // ==/UserScript==
 
@@ -201,7 +201,9 @@
 
 
 
-    window.define('shinjuku/loader/RelatedVideo',['jquery'], function($) {
+    var require = window.require, define = window.define;
+
+    define('shinjuku/loader/RelatedVideo',['jquery'], function($) {
       var RelatedVideo = function() { this.initialize.apply(this, arguments); };
       RelatedVideo.prototype = {
         initialize: function() {
@@ -236,7 +238,7 @@
       return RelatedVideo;
     });
 
-    window.define('shinjuku/util/NicoplayerResizer',['jquery', 'lodash'], function($, _) {
+    define('shinjuku/util/NicoplayerResizer',['jquery', 'lodash'], function($, _) {
       var NicoplayerResizer = function() { this.initialize.apply(this, arguments); };
 
       NicoplayerResizer.prototype = {
@@ -2553,6 +2555,7 @@
           }
 
           var WatchInfoModel = require('watchapp/model/WatchInfoModel');
+          var PrepareApp = require('PrepareApp');
           var watchInfoModel = WatchInfoModel.getInstance();
           if (watchInfoModel.initialized) {
             window.Shinjuku.initialize();
@@ -2570,13 +2573,19 @@
               console.log('%cinitialize Immediately', 'background: lightgreen;');
               var EmbeddedWatchData = require('EmbeddedWatchData');
               EmbeddedWatchData.run_ = EmbeddedWatchData.run;
-              EmbeddedWatchData.run_(
-                JSON.parse($('#configDataContainer').html()),
-                JSON.parse($('#watchAPIDataContainer').text())
-              );
+              EmbeddedWatchData.run = function() {
+                $('#nicoSpotAdAds >*:nth-child(2)').remove();
+                if (!window.ichiba) {
+                  console.log('%cload ichiba', 'background: lightgreen;');
+                  PrepareApp.loadScript('http://res.nimg.jp/js/watch/ichiba/ichiba_zero.js');
+                }
+              };
               window.setTimeout(function() {
                 console.time('initialize Immediately');
-                EmbeddedWatchData.run_(JSON.parse($('#configDataContainer').html()));
+                EmbeddedWatchData.run_(
+                  JSON.parse($('#configDataContainer').html()),
+                  JSON.parse($('#watchAPIDataContainer').text())
+                );
                 console.timeEnd('initialize Immediately');
               }, 0);
             }
@@ -2593,7 +2602,7 @@
   script.setAttribute("charset", "UTF-8");
   if (location.pathname.indexOf('/watch/') === 0) {
     script.appendChild(document.createTextNode(
-      'require(["WatchApp", "jquery", "lodash"], function() {' +
+      'require(["PrepareApp", "WatchApp"], function() {' +
         'console.log("%crequire WatchApp", "background: lightgreen;");' +
         '(' + monkey + ')();' +
       '});'
