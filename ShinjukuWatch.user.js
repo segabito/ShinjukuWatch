@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.7.2
+// @version     1.8.2
 // @grant       none
 // ==/UserScript==
 
@@ -985,10 +985,10 @@
               clear: both !important;
               height: 256px;
             }
-            #outline .sidebar>div:not(#playerBottomAd):not(#videoReviewBottomAd) {
+            #outline .sidebar>div:not(#rectangleAd):not(#sideFollowAd) {
               display: none;
             }
-            #outline #playerBottomAd, #outline #videoReviewBottomAd {
+            #outline #rectangleAd, #outline #sideFollowAd {
               position: absolute !important;
 
               overflow: hidden;
@@ -997,11 +997,11 @@
               bottom:    0 !important;
               margin: 0 !important;
             }
-            #outline #playerBottomAd {
+            #outline #rectangleAd {
               left:  0    !important;
               right: auto !important;
             }
-            #outline #videoReviewBottomAd {
+            #outline #sideFollowAd {
               left:  auto !important;
               right:    0 !important;
             }
@@ -1343,7 +1343,7 @@
               display: none !important;
             }
 
-            #nicoSpotAd>button, #content.panel_ads_shown #leftPanelAd>button{
+            #nicoSpotAd>button, #content.panel_ads_shown #miniBannerAd>button{
                transform: scale(1.5); -webkit-transform: scale(1.5);
             }
 
@@ -2539,6 +2539,7 @@
       });
 
       if (window.WatchJsApi) {
+
         ($.proxy(function() {
           this.initializeUserConfig();
           this.initializeCss();
@@ -2555,7 +2556,6 @@
           }
 
           var WatchInfoModel = require('watchapp/model/WatchInfoModel');
-          var PrepareApp = require('PrepareApp');
           var watchInfoModel = WatchInfoModel.getInstance();
           if (watchInfoModel.initialized) {
             window.Shinjuku.initialize();
@@ -2568,18 +2568,17 @@
               }, 0);
             };
             watchInfoModel.addEventListener('reset', onReset);
+            if (!require.defined('EmbeddedWatchData')) {
+              return;
+            }
             if (this.config.get('osusumeOnly') === false &&
                 this.config.get('initializeImmediately') === true) {
               console.log('%cinitialize Immediately', 'background: lightgreen;');
               var EmbeddedWatchData = require('EmbeddedWatchData');
               EmbeddedWatchData.run_ = EmbeddedWatchData.run;
-              EmbeddedWatchData.run = function() {
+              EmbeddedWatchData.run = _.debounce(function() {
                 $('#nicoSpotAdAds >*:nth-child(2)').remove();
-                if (!window.ichiba) {
-                  console.log('%cload ichiba', 'background: lightgreen;');
-                  PrepareApp.loadScript('http://res.nimg.jp/js/watch/ichiba/ichiba_zero.js');
-                }
-              };
+              }, 1000);
               window.setTimeout(function() {
                 console.time('initialize Immediately');
                 EmbeddedWatchData.run_(
@@ -2601,8 +2600,29 @@
   script.setAttribute("type", "text/javascript");
   script.setAttribute("charset", "UTF-8");
   if (location.pathname.indexOf('/watch/') === 0) {
+    setTimeout(function() {
+      // ブロックが発動しててもとりあえず動くように (Firefoxだけ？)
+      if (!window.Ads && !require.defined('Ads')) {
+        define('Ads', [], function() {
+          window.Ads = { Advertisement: function() { return {set: function() {}}; } };
+          return window.Ads;
+        });
+      }
+      if (!window.channel && !require.defined('channel')) {
+        define('channel', [], function() {
+          window.channel = {};
+          return window.channel;
+        });
+      }
+      if (!window.enquete && !require.defined('enquete')) {
+        define('enquete', [], function() {
+          window.enquete = { emitter: function() {} };
+          return window.enquete;
+        });
+      }
+    }, 0);
     script.appendChild(document.createTextNode(
-      'require(["PrepareApp", "WatchApp"], function() {' +
+      'require(["WatchApp"], function() {' +
         'console.log("%crequire WatchApp", "background: lightgreen;");' +
         '(' + monkey + ')();' +
       '});'
