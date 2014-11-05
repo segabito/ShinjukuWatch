@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.8.2
+// @version     1.8.3
 // @grant       none
 // ==/UserScript==
 
@@ -2568,23 +2568,18 @@
               }, 0);
             };
             watchInfoModel.addEventListener('reset', onReset);
-            if (!require.defined('EmbeddedWatchData')) {
-              return;
-            }
+            var pso = require('prepareapp/PlayerStartupObserver');
+
             if (this.config.get('osusumeOnly') === false &&
                 this.config.get('initializeImmediately') === true) {
               console.log('%cinitialize Immediately', 'background: lightgreen;');
-              var EmbeddedWatchData = require('EmbeddedWatchData');
-              EmbeddedWatchData.run_ = EmbeddedWatchData.run;
-              EmbeddedWatchData.run = _.debounce(function() {
-                $('#nicoSpotAdAds >*:nth-child(2)').remove();
-              }, 1000);
               window.setTimeout(function() {
+                if (pso._executed) {
+                  return;
+                }
                 console.time('initialize Immediately');
-                EmbeddedWatchData.run_(
-                  JSON.parse($('#configDataContainer').html()),
-                  JSON.parse($('#watchAPIDataContainer').text())
-                );
+                pso._executed = true;
+                pso._dispatch();
                 console.timeEnd('initialize Immediately');
               }, 0);
             }
@@ -2600,30 +2595,30 @@
   script.setAttribute("type", "text/javascript");
   script.setAttribute("charset", "UTF-8");
   if (location.pathname.indexOf('/watch/') === 0) {
-    setTimeout(function() {
-      // ブロックが発動しててもとりあえず動くように (Firefoxだけ？)
-      if (!window.Ads && !require.defined('Ads')) {
-        define('Ads', [], function() {
-          window.Ads = { Advertisement: function() { return {set: function() {}}; } };
-          return window.Ads;
-        });
-      }
-      if (!window.channel && !require.defined('channel')) {
-        define('channel', [], function() {
-          window.channel = {};
-          return window.channel;
-        });
-      }
-      if (!window.enquete && !require.defined('enquete')) {
-        define('enquete', [], function() {
-          window.enquete = { emitter: function() {} };
-          return window.enquete;
-        });
-      }
-    }, 0);
+//    setTimeout(function() {
+//      // ブロックが発動しててもとりあえず動くように (Firefoxだけ？)
+//      if (!window.Ads && !require.defined('Ads')) {
+//        define('Ads', [], function() {
+//          window.Ads = { Advertisement: function() { return {set: function() {}}; } };
+//          return window.Ads;
+//        });
+//      }
+//      if (!window.channel && !require.defined('channel')) {
+//        define('channel', [], function() {
+//          window.channel = {};
+//          return window.channel;
+//        });
+//      }
+//      if (!window.enquete && !require.defined('enquete')) {
+//        define('enquete', [], function() {
+//          window.enquete = { emitter: function() {} };
+//          return window.enquete;
+//        });
+//      }
+//    }, 0);
     script.appendChild(document.createTextNode(
-      'require(["WatchApp"], function() {' +
-        'console.log("%crequire WatchApp", "background: lightgreen;");' +
+      'require(["WatchApp", "prepareapp/PlayerStartupObserver"], function() {' +
+        'console.log("%cShinjuku: require WatchApp", "background: lightgreen;");' +
         '(' + monkey + ')();' +
       '});'
     ));
