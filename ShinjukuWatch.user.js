@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.8.3
+// @version     1.8.4
 // @grant       none
 // ==/UserScript==
 
@@ -2387,8 +2387,9 @@
                 <label><input type="radio" value="false"> しない</label>
               </div>
               <div class="item" data-setting-name="initializeImmediately" data-menu-type="radio">
-                <h3 class="itemTitle">動画のロードを待たずに初期化する</h3>
-                <small>体感ではこちらが早く感じる場合も？(※不具合があるかも)</small><br>
+                <h3 class="itemTitle"><s>動画のロードを待たずに初期化する</s></h3>
+                <s><small>体感ではこちらが早く感じる場合も？(※不具合があるかも)</small></s><br>
+                <small>必要な場合は単体スクリプトの <a href="https://greasyfork.org/ja/scripts/4718-dontsetuplazy" target="_blank">DontSetupLazy</a>をインストールしてください</small><br>
                 <label><input type="radio" value="true" > する</label>
                 <label><input type="radio" value="false"> しない</label>
               </div>
@@ -2537,9 +2538,7 @@
 
 
       });
-
       if (window.WatchJsApi) {
-
         ($.proxy(function() {
           this.initializeUserConfig();
           this.initializeCss();
@@ -2556,35 +2555,39 @@
           }
 
           var WatchInfoModel = require('watchapp/model/WatchInfoModel');
+
           var watchInfoModel = WatchInfoModel.getInstance();
           if (watchInfoModel.initialized) {
             window.Shinjuku.initialize();
           } else {
             var onReset = function() {
+//              console.log('%conReset!', 'background:red; color: yellow;');
               watchInfoModel.removeEventListener('reset', onReset);
               window.setTimeout(function() {
-                watchInfoModel.removeEventListener('reset', onReset);
                 window.Shinjuku.initialize();
-              }, 0);
+              }, 100);
             };
             watchInfoModel.addEventListener('reset', onReset);
-            var pso = require('prepareapp/PlayerStartupObserver');
 
-            if (this.config.get('osusumeOnly') === false &&
-                this.config.get('initializeImmediately') === true) {
-              console.log('%cinitialize Immediately', 'background: lightgreen;');
-              window.setTimeout(function() {
-                if (pso._executed) {
-                  return;
-                }
-                console.time('initialize Immediately');
-                pso._executed = true;
-                pso._dispatch();
-                console.timeEnd('initialize Immediately');
-              }, 0);
-            }
           }
         }, window.Shinjuku))();
+
+//        if (window.Shinjuku.config.get('osusumeOnly') === false &&
+//            window.Shinjuku.config.get('initializeImmediately') === true) {
+//          var pso = require('prepareapp/PlayerStartupObserver');
+//          console.log('%cinitialize Immediately!', 'background: lightgreen;');
+//          window.setTimeout(function() {
+//            if (pso._executed) {
+//              console.log('%cexecuted! ', 'background: lightgreen;');
+//              return;
+//            }
+//            console.time('initialize Immediately');
+//            pso._executed = true;
+//            pso._dispatch();
+//            console.timeEnd('initialize Immediately');
+//          }, 0);
+//        }
+
       }
     });
 
@@ -2595,29 +2598,8 @@
   script.setAttribute("type", "text/javascript");
   script.setAttribute("charset", "UTF-8");
   if (location.pathname.indexOf('/watch/') === 0) {
-//    setTimeout(function() {
-//      // ブロックが発動しててもとりあえず動くように (Firefoxだけ？)
-//      if (!window.Ads && !require.defined('Ads')) {
-//        define('Ads', [], function() {
-//          window.Ads = { Advertisement: function() { return {set: function() {}}; } };
-//          return window.Ads;
-//        });
-//      }
-//      if (!window.channel && !require.defined('channel')) {
-//        define('channel', [], function() {
-//          window.channel = {};
-//          return window.channel;
-//        });
-//      }
-//      if (!window.enquete && !require.defined('enquete')) {
-//        define('enquete', [], function() {
-//          window.enquete = { emitter: function() {} };
-//          return window.enquete;
-//        });
-//      }
-//    }, 0);
-    script.appendChild(document.createTextNode(
-      'require(["WatchApp", "prepareapp/PlayerStartupObserver"], function() {' +
+   script.appendChild(document.createTextNode(
+      'require(["WatchApp", "lodash", "prepareapp/PlayerStartupObserver"], function() {' +
         'console.log("%cShinjuku: require WatchApp", "background: lightgreen;");' +
         '(' + monkey + ')();' +
       '});'
