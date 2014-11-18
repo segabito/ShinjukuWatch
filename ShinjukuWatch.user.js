@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.8.4
+// @version     1.8.5
 // @grant       none
 // ==/UserScript==
 
@@ -2267,7 +2267,7 @@
               $('#content').find('.browserFullPlaylistClose:visible').click();
               if (config.get('hideControlInFull')) {
                 $('body').addClass('hideCommentInput');
-                npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: false});
+//                npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: false});
               }
             } else
             if (lastScreenMode === 'browserFull' && mode !== 'browserFull') {
@@ -2276,7 +2276,7 @@
               $('#playerContainerSlideArea').css({height: ''});
               if (config.get('hideControlInFull')) {
                 $('body').removeClass('hideCommentInput');
-                npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
+//                npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
               }
 
               // 解除のたびにスクロール位置が一番上になってしまうので、いい感じの場所にする
@@ -2290,9 +2290,9 @@
             // フルスクリーンのまま別タブで開いたり、
             // フルスクリーンのままFlashPlayerが落ちたりすると操作パネルが動画上に行ったままになってしまうので戻す。
             // TODO: 自分で操作パネルを動画上に設定してる人を考慮するかどうか
-            if (config.get('forceOldTypeControlPanel') == true) {
-              npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
-            }
+//            if (config.get('forceOldTypeControlPanel') == true) {
+//              npc.playerConfig.set({oldTypeCommentInput: true, oldTypeControlPanel: true});
+//            }
           }, this));
           PlayerInitializer.playerScreenMode.addEventListener('change', onScreenModeChange);
         },
@@ -2332,11 +2332,13 @@
                 <label><input type="radio" value="true" >する</label>
                 <label><input type="radio" value="false">しない</label>
               </div>
+
               <div class="item" data-setting-name="hideControlInFull" data-menu-type="radio">
-                <h3 class="itemTitle">ブラウザ全画面時にコメント入力欄と操作パネルを隠す</h3>
+                <h3 class="itemTitle">ブラウザ全画面時にコメント入力欄<s>と操作パネル</s>を隠す</h3>
                 <label><input type="radio" value="true" >する</label>
                 <label><input type="radio" value="false">しない</label>
               </div>
+
               <div class="item" data-setting-name="noNews" data-menu-type="radio">
                 <h3 class="itemTitle">ニコニコニュースを消す</h3>
                 <label><input type="radio" value="true" >消す</label>
@@ -2368,12 +2370,14 @@
                 <label><input type="radio" value="true" >する</label>
                 <label><input type="radio" value="false">しない</label>
               </div>
-              <div class="item" data-setting-name="forceOldTypeControlPanel" data-menu-type="radio">
+<!--
+<div class="item" data-setting-name="forceOldTypeControlPanel" data-menu-type="radio">
                 <h3 class="itemTitle">起動時に操作パネルの位置をリセットする</h3>
                 <small>操作パネルを動画プレイヤー上に設定している場合はオフにしてください</small><br>
                 <label><input type="radio" value="true" >する</label>
                 <label><input type="radio" value="false">しない</label>
               </div>
+-->
               <div class="item" data-setting-name="osusumeOnly" data-menu-type="radio">
                 <h3 class="itemTitle">オススメタブの機能だけを使う</h3>
                 <small>他のスクリプトにオススメタブだけ欲しい場合など</small><br>
