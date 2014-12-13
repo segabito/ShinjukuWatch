@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.8.5
+// @version     1.8.7
 // @grant       none
 // ==/UserScript==
 
@@ -1614,7 +1614,6 @@
             dblclickAutoScroll: true,
             autoScroll: true,
             hideControlInFull: true,
-            autoClearPlaylist: true,
             autoLoadRelatedVideo: false,
             hideCommentPanelSocialButtons: true,
             forceOldTypeControlPanel: true,
@@ -2029,11 +2028,6 @@
             if (this.playlistController.isContinuous()) {
               // マイリストページなどから「連続再生」で飛んできた場合はプレイリストを消さない
               this.playlistController.toggle(true);
-            } else {
-              // プレイリストを空にする事で、プレーヤー上の「次の動画」「前の動画」ボタンを無効化して誤爆を防ぐことができる
-              if (this.config.get('autoClearPlaylist')) {
-                this.playlistController.clear();
-              }
             }
           } catch (e) {
             console.log('本家の仕様変わったかも');
@@ -2185,6 +2179,7 @@
           });
 
           $iframe.css({position: 'fixed', top: '-9999px', bottom: 'auto'});
+          window.setTimeout(function() { $iframe.css({position: '', top: '', bottom: ''}); }, 5000);
           $('#videoHeader').append($iframe);
           update();
 
@@ -2357,12 +2352,6 @@
 
               <div class="expert">
                 <h2>上級者向け設定</h2>
-              </div>
-              <div class="item" data-setting-name="autoClearPlaylist" data-menu-type="radio">
-                <h3 class="itemTitle">初回ロード時にプレイリストの中身を空にする</h3>
-                <small>空にする事によって「前の動画」「次の動画」ボタンが無効になり、誤クリックしなくなります</small><br>
-                <label><input type="radio" value="true" >する</label>
-                <label><input type="radio" value="false">しない</label>
               </div>
               <div class="item" data-setting-name="autoLoadRelatedVideo" data-menu-type="radio">
                 <h3 class="itemTitle">初回ロード時も常に関連動画をロードする</h3>
