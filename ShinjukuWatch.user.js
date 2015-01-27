@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.8.7
+// @version     1.9.0
 // @grant       none
 // ==/UserScript==
 
@@ -781,10 +781,12 @@
             }
 
             {* ソーシャルボタン *}
-            .area-JP .panel_ads_shown #playerTabContainer.w_noSocial.has_panel_ads .playerTabContent {
+            .area-JP .panel_ads_shown #playerTabContainer.w_noSocial.has_panel_ads .playerTabContent,
+            .area-JP .panel_ads_shown #playerTabContainer.w_noSocial.has_panel_ads .player-tab-content {
               bottom: 80px;
             }
-            .area-JP                  #playerTabContainer.w_noSocial               .playerTabContent {
+            .area-JP                  #playerTabContainer.w_noSocial               .playerTabContent,
+            .area-JP                  #playerTabContainer.w_noSocial               .player-tab-content {
               bottom: 4px;
             }
             #playerTabContainer.w_noSocial .playerTabAds {
@@ -797,7 +799,8 @@
               bottom: 8px;
             }
 
-            #playerTabContainer.osusumeTab .playerTabHeader .playerTabItem {
+            #playerTabContainer.osusumeTab .playerTabHeader .playerTabItem,
+            #playerTabContainer .player-panel-tabs .player-tab-header .player-tab-item {
               width: 108px;
             }
 
@@ -1754,19 +1757,25 @@
           $openVideoExplorer = null;
         },
         initializePlayerTab: function() {
-          var tab = PlayerInitializer.playerTab;
+          var tab = PlayerInitializer.playerTab || PlayerInitializer.rightSidePanelViewController.getPlayerPanelTabsView();
           tab.reload = $.proxy(function() {
-            this.$contents = this.$items = null;
-            this._getTabItems().off('click').on('click', $.proxy(this._onClickTabItem, this));
+            this.$contents = this.$items = this._$tabContent = this._$tabItem = null;
+            if (this._$node) {
+              this._$tabItem = this._$node.find('.player-tab-item');
+              this._$tabContent = this._$node.find('.player-tab-content-item');
+              this._$tabItem.off('click').on('click', $.proxy(this._onClickTabItem, this));
+            } else {
+              this._getTabItems().off('click').on('click', $.proxy(this._onClickTabItem, this));
+            }
           }, tab);
 
           (function() {
             var $playerTab = $('#playerTabContainer').addClass('osusumeTab');
-            var $tabHeader = $('<th data-nico-tab-target="osusume" class="playerTabItem osusume">オススメ</th>');
-            var $tabBody   = $('<div id="osusumePanelContainer" class="playerTabContentItem osusume"></div>');
+            var $tabHeader = $('<th data-tab-target="osusume" data-nico-tab-target="osusume" class="playerTabItem player-tab-item osusume">オススメ</th>');
+            var $tabBody   = $('<div id="osusumePanelContainer" class="player-tab-content-item playerTabContentItem osusume"></div>');
 
-            $playerTab.find('.playerTabHeader tr').append($tabHeader);
-            $playerTab.find('.playerTabContent').append($tabBody);
+            $playerTab.find('.playerTabHeader tr, .player-panel-tabs tr').append($tabHeader);
+            $playerTab.find('.playerTabContent, .player-tab-content').append($tabBody);
 
             tab.reload();
           })();
@@ -1959,18 +1968,6 @@
               osusumeController.refresh();
             });
           };
-
-          // 再生開始時にタブがコメントに変わるのはザッピングに邪魔なので切る
-          try {
-            PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
-              'onVideoStarted',
-              PlayerInitializer.playerTab._onVideoStarted);
-            PlayerInitializer.playerTab.playerAreaConnector.removeEventListener(
-              'onVideoEnded',
-              PlayerInitializer.playerTab._onVideoEnded);
-          } catch (e) {
-            console.log('仕様変わった? ', e);
-          }
 
 
           this._playerAreaConnector.addEventListener('onFirstVideoInitialized', $.proxy(function() {
