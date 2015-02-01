@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.9.0
+// @version     1.9.1
 // @grant       none
 // ==/UserScript==
 
@@ -238,6 +238,12 @@
       return RelatedVideo;
     });
 
+    var refreshCommentPanel = function() {
+      var pv = require('watchapp/init/PlayerInitializer').rightSidePanelViewController.getPlayerPanelTabsView();
+      var cpv = pv._commentPanelView;
+      cpv.resize();
+    };
+
     define('shinjuku/util/NicoplayerResizer',['jquery', 'lodash'], function($, _) {
       var NicoplayerResizer = function() { this.initialize.apply(this, arguments); };
 
@@ -254,9 +260,10 @@
           }, this), 0);
 
           $(window).on('resize',
-            window._.debounce(
+            _.debounce(
               $.proxy(function() {
                 this._updateStyle();
+                refreshCommentPanel();
               },
             this),
           500));
@@ -1757,16 +1764,12 @@
           $openVideoExplorer = null;
         },
         initializePlayerTab: function() {
-          var tab = PlayerInitializer.playerTab || PlayerInitializer.rightSidePanelViewController.getPlayerPanelTabsView();
+          var tab = PlayerInitializer.rightSidePanelViewController.getPlayerPanelTabsView();
           tab.reload = $.proxy(function() {
             this.$contents = this.$items = this._$tabContent = this._$tabItem = null;
-            if (this._$node) {
-              this._$tabItem = this._$node.find('.player-tab-item');
-              this._$tabContent = this._$node.find('.player-tab-content-item');
-              this._$tabItem.off('click').on('click', $.proxy(this._onClickTabItem, this));
-            } else {
-              this._getTabItems().off('click').on('click', $.proxy(this._onClickTabItem, this));
-            }
+            this._$tabItem = this._$node.find('.player-tab-item');
+            this._$tabContent = this._$node.find('.player-tab-content-item');
+            this._$tabItem.off('click').on('click', $.proxy(this._onClickTabItem, this));
           }, tab);
 
           (function() {
@@ -1774,8 +1777,8 @@
             var $tabHeader = $('<th data-tab-target="osusume" data-nico-tab-target="osusume" class="playerTabItem player-tab-item osusume">オススメ</th>');
             var $tabBody   = $('<div id="osusumePanelContainer" class="player-tab-content-item playerTabContentItem osusume"></div>');
 
-            $playerTab.find('.playerTabHeader tr, .player-panel-tabs tr').append($tabHeader);
-            $playerTab.find('.playerTabContent, .player-tab-content').append($tabBody);
+            $playerTab.find('.player-panel-tabs tr').append($tabHeader);
+            $playerTab.find('.player-tab-content').append($tabBody);
 
             tab.reload();
           })();
@@ -2157,6 +2160,7 @@
             $iframe.addClass('updating');
             var videoId = watchInfoModel.v;
             $iframe[0].contentWindow.location.replace("/mylist_add/video/" + videoId);
+            refreshCommentPanel();
           };
 
           var isFirst = true;
@@ -2561,23 +2565,6 @@
 
           }
         }, window.Shinjuku))();
-
-//        if (window.Shinjuku.config.get('osusumeOnly') === false &&
-//            window.Shinjuku.config.get('initializeImmediately') === true) {
-//          var pso = require('prepareapp/PlayerStartupObserver');
-//          console.log('%cinitialize Immediately!', 'background: lightgreen;');
-//          window.setTimeout(function() {
-//            if (pso._executed) {
-//              console.log('%cexecuted! ', 'background: lightgreen;');
-//              return;
-//            }
-//            console.time('initialize Immediately');
-//            pso._executed = true;
-//            pso._dispatch();
-//            console.timeEnd('initialize Immediately');
-//          }, 0);
-//        }
-
       }
     });
 
