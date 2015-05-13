@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.9.1
+// @version     1.9.2
 // @grant       none
 // ==/UserScript==
 
@@ -1092,7 +1092,10 @@
               top: auto;
               bottom: 48px;
             }
-            body #videoHeader #videoMenuWrapper .defmylistButton, body #videoHeader #videoMenuWrapper .mylistButton {
+            body #videoHeader #videoMenuWrapper .defmylistButton,
+            body #videoHeader #videoMenuWrapper .facebookButton,
+            body #videoHeader #videoMenuWrapper .userChannel,
+            body #videoHeader #videoMenuWrapper .twitterButton {
               display: none !important;
             }
             body #videoHeader #videoMenuTopList{
@@ -1607,7 +1610,13 @@
               }
             }
 
-
+            {* 開閉時に変なスクロールしてしまう奴 *}
+            #videoHeader.menuOpened #editorMenu {
+              margin-top: 12px !important;
+            }
+            #editorMenu.hidden {
+              display: none;
+            }
 
           */}).toString().match(/[^]*\/\*([^]*)\*\/\}$/)[1].replace(/\{\*/g, '/*').replace(/\*\}/g, '*/');
 
