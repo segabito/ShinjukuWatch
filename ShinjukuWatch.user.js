@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.9.2
+// @version     1.9.3
 // @grant       none
 // ==/UserScript==
 
@@ -1112,11 +1112,8 @@
             }
 
             {* テレビちゃんメニューのスライド殺す *}
-            body #videoHeader.menuOpened #videoMenuWrapper {
-              margin-bottom: 0;
-            }
-            body #videoHeader.menuOpened #videoHeaderDetail {
-              margin-top: 0px;
+            #videoHeader .tvChanMenuHeightController {
+              display: none !important;
             }
 
             body.Shinjuku:not(.videoExplorer):not(.setting_panel):not(.full_with_browser)    #content.noNews              #playerTabWrapper {
