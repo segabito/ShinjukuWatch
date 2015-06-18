@@ -4,7 +4,7 @@
 // @description 新しい原宿　略して新宿
 // @include     http://www.nicovideo.jp/watch/*
 // @include     http://www.nicovideo.jp/mylist_add/video/*
-// @version     1.9.3
+// @version     1.9.5
 // @grant       none
 // ==/UserScript==
 
@@ -470,7 +470,6 @@
         },
         initializeShinjuku: function() {
           this.initializeTag();
-          this.initializeNicoru();
           this.initializeVideoExplorer();
           this.initializePlayerTab();
           this.initializeIchiba();
@@ -750,14 +749,7 @@
             #content.noNews #textMarquee {
               display: none !important;
             }
-            {* ニコるを消す *}
-            .noNicoru .nicoru-button{
-              left: -9999; display: none !important;
-            }
-            .noNicoru .menuOpened #videoMenuTopList li.videoMenuListNicoru .nicoru-button{
-              display: block !important;
-            }
-            .noNicoru #videoTagContainer .tagInner #videoHeaderTagList li {
+            #videoTagContainer .tagInner #videoHeaderTagList li {
               margin: 0 18px 4px 0;
             }
 
@@ -835,6 +827,14 @@
           var __css__ = (function() {/*
             #videoHeaderDetail h2 {
               letter-spacing: -1px; {* たまに最後の1文字だけ改行されるのを防ぐ *}
+            }
+            #content .videoHeaderTitle {
+              display: inline-block;
+              width: 100%;
+              overflow: hidden;
+              letter-spacing: -1px;
+              text-overflow: ellipsis;
+              white-space: nowrap;
             }
             .size_normal #videoHeaderDetail h2 {
               max-width: 898px;
@@ -1665,13 +1665,6 @@
           });
           $('#videoTagContainer').off();
         },
-        initializeNicoru: function() {
-          if (this.config.get('noNicoru')) {
-            // ニコる数を取得するためにコメントパネルがめちゃくちゃ重くなってるのを改善 (Chromeだとあまり変わらない)
-            NicoPlayerConnector.getCommentNicoruCount = function() { return 0; };
-            $('body').addClass('noNicoru');
-          }
-        },
         initializeVideoExplorer: function() {
           var self = this;
           var explorer   = VideoExplorerInitializer.videoExplorer;
@@ -2346,11 +2339,6 @@
                 <label><input type="radio" value="true" >消す</label>
                 <label><input type="radio" value="false">消さない</label>
               </div>
-              <div class="item" data-setting-name="noNicoru" data-menu-type="radio">
-                <h3 class="itemTitle">ニコるを消す</h3>
-                <label><input type="radio" value="true" >消す</label>
-                <label><input type="radio" value="false">消さない</label>
-              </div>
               <div class="item" data-setting-name="hideCommentPanelSocialButtons" data-menu-type="radio">
                 <h3 class="itemTitle">コメントパネルのソーシャルボタン</h3>
                 <label><input type="radio" value="true" >消す</label>
@@ -2497,6 +2485,7 @@
           // $('#content').removeClass('panel_ads_shown'); // コメントパネルの広告消すやつ
           $('.videoDetailExpand h2').addClass('videoDetailToggleButton');
 
+
           // ヘッダとコンテンツツリーの位置を入れ替える お気に入り登録ボタンが効かなくなる模様
           //$('.userProfile:first').after($('.parentVideoInfo:first').detach());
           //$('.hiddenUserProfile').after($('.userProfile:first').detach());
@@ -2505,6 +2494,7 @@
           var refreshTitle = function() {
             window.setTimeout(function() {
               document.title = document.title.replace(/ニコニコ動画:GINZA$/, 'ニコニコ動画(新宿)');
+              $('.videoHeaderTitle').attr('title', $('.videoHeaderTitle').text());
             }, 1000);
           };
           refreshTitle();
